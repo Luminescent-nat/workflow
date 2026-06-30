@@ -1,0 +1,50 @@
+[
+  {
+    "id": "filesystem",
+    "name": "Filesystem",
+    "description": "读写指定目录的文件系统访问",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\path\\to\\dir"],
+    "env": {}
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "description": "访问 GitHub 仓库、Issue 与 PR",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "" }
+  },
+  {
+    "id": "memory",
+    "name": "Memory",
+    "description": "基于知识图谱的持久记忆",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-memory"],
+    "env": {}
+  },
+  {
+    "id": "sequential-thinking",
+    "name": "Sequential Thinking",
+    "description": "结构化分步推理",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    "env": {}
+  },
+  {
+    "id": "fetch",
+    "name": "Fetch",
+    "description": "抓取网页并转为可读文本",
+    "command": "uvx",
+    "args": ["mcp-server-fetch"],
+    "env": {}
+  },
+  {
+    "id": "postgres",
+    "name": "PostgreSQL",
+    "description": "只读查询 PostgreSQL 数据库",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost/db"],
+    "env": {}
+  }
+]

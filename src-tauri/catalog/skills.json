@@ -1,0 +1,58 @@
+[
+  {
+    "id": "code-reviewer",
+    "name": "代码审查助手",
+    "description": "审查代码改动时使用,聚焦正确性、可读性与潜在缺陷",
+    "category": "全栈",
+    "content": "审查代码时,按以下维度逐项检查并给出可执行建议:\n\n- 正确性:边界条件、错误处理、并发与资源释放\n- 可读性:命名、函数职责单一、注释密度与现有代码一致\n- 复用:是否有可复用的既有工具,避免重复实现\n- 安全:输入校验、注入、密钥泄漏\n\n输出按严重程度分级,并指向具体 file:line。"
+  },
+  {
+    "id": "git-commit",
+    "name": "提交信息助手",
+    "description": "生成 Git 提交信息时使用,遵循 Conventional Commits",
+    "category": "全栈",
+    "content": "按 Conventional Commits 生成提交信息:\n\n`<type>(<scope>): <subject>`\n\ntype 取值:feat / fix / refactor / docs / test / chore / perf。\nsubject 用祈使句、不超过 50 字、不加句号。必要时补充正文说明动机与影响。"
+  },
+  {
+    "id": "react-component",
+    "name": "React 组件脚手架",
+    "description": "创建 React + TypeScript 组件时使用,遵循项目既有约定",
+    "category": "前端",
+    "content": "生成 React 组件时:\n\n- 函数组件 + TypeScript,props 用 interface 显式声明\n- 与周边组件保持一致的样式方案与命名\n- 受控状态尽量上提,副作用集中在 useEffect\n- 导出默认组件,必要时拆分子组件与自定义 hook"
+  },
+  {
+    "id": "api-designer",
+    "name": "REST API 设计",
+    "description": "设计 HTTP 接口时使用,保证一致的资源与错误约定",
+    "category": "后端",
+    "content": "设计 REST 接口时:\n\n- 资源名用复数名词,层级清晰;动作用 HTTP 方法表达\n- 统一错误体:{ code, message, details }\n- 分页、过滤、排序用查询参数并保持命名一致\n- 明确幂等性与状态码语义(201/204/409/422)"
+  },
+  {
+    "id": "sql-optimizer",
+    "name": "SQL 优化",
+    "description": "分析慢查询与索引时使用",
+    "category": "数据",
+    "content": "优化 SQL 时:\n\n- 先看执行计划,定位全表扫描与排序开销\n- 按查询条件设计组合索引,注意最左前缀\n- 避免 SELECT *、隐式类型转换与函数包裹索引列\n- 大批量操作分批进行,关注锁与事务范围"
+  },
+  {
+    "id": "dockerfile-helper",
+    "name": "Dockerfile 助手",
+    "description": "编写容器镜像构建文件时使用",
+    "category": "DevOps",
+    "content": "编写 Dockerfile 时:\n\n- 使用多阶段构建,运行镜像只保留必要产物\n- 固定基础镜像版本,合并 RUN 层并清理缓存\n- 优先复制依赖清单并提前安装以利用缓存\n- 以非 root 用户运行,显式声明 EXPOSE 与 ENTRYPOINT"
+  },
+  {
+    "id": "test-writer",
+    "name": "单元测试生成",
+    "description": "为函数或模块生成单元测试时使用",
+    "category": "测试",
+    "content": "编写单元测试时:\n\n- 覆盖正常路径、边界值与错误路径\n- 每个测试只断言一个行为,命名描述场景\n- 隔离外部依赖(网络/文件/时间)用替身\n- 保持与项目既有测试框架和风格一致"
+  },
+  {
+    "id": "debugging",
+    "name": "系统化调试",
+    "description": "定位缺陷根因时使用,采用假设-验证法",
+    "category": "全栈",
+    "content": "系统化调试步骤:\n\n1. 稳定复现,记录最小复现条件\n2. 提出可证伪的假设,按成本从低到高排序\n3. 逐一验证,用日志或断点收集证据\n4. 定位根因后修复,并补一个能复现该缺陷的回归测试"
+  }
+]
