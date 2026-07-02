@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Download, Pencil, Trash2, CheckCircle2, Power, Loader2, Plug } from "lucide-react";
+import { Plus, Download, Pencil, Trash2, CheckCircle2, Power, Loader2, Plug, Eye, EyeOff } from "lucide-react";
 import clsx from "clsx";
 import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { ipc, type Provider, type Tool } from "@/ipc";
+import { useI18n } from "@/i18n";
 
 const TOOLS: { key: Tool; label: string }[] = [
   { key: "claude", label: "Claude" },
@@ -24,8 +25,8 @@ const emptyDraft = (tool: Tool): Provider => ({
   active: false,
 });
 
-function maskKey(k: string): string {
-  if (!k) return "(未填密钥)";
+function maskKey(k: string, missingText: string): string {
+  if (!k) return missingText;
   if (k.length <= 8) return "••••";
   return `${k.slice(0, 4)}••••${k.slice(-4)}`;
 }
@@ -53,7 +54,9 @@ function ProviderForm({
   onSubmit: () => void;
   submitting: boolean;
 }) {
+  const { t } = useI18n();
   const set = (patch: Partial<Provider>) => onChange({ ...draft, ...patch });
+  const [showKey, setShowKey] = useState(false);
   return (
     <form
       onSubmit={(e) => {
@@ -62,13 +65,13 @@ function ProviderForm({
       }}
       className="space-y-3"
     >
-      <Field label="名称">
+      <Field label={t("providers.name")}>
         <input
           className={inputCls}
           value={draft.name}
           onChange={(e) => set({ name: e.target.value })}
           required
-          placeholder="例如:某中转 / 官方"
+          placeholder={t("providers.namePlaceholder")}
         />
       </Field>
       <Field label="Base URL">
@@ -81,15 +84,30 @@ function ProviderForm({
         />
       </Field>
       <Field label="API Key / Token">
-        <input
-          className={inputCls}
-          value={draft.key}
-          onChange={(e) => set({ key: e.target.value })}
-          type="password"
-          placeholder="sk-..."
-        />
+        <div className="flex gap-2">
+          <input
+            className={inputCls}
+            value={draft.key}
+            onChange={(e) => set({ key: e.target.value })}
+            type={showKey ? "text" : "password"}
+            placeholder="sk-..."
+            autoComplete="off"
+          />
+          <Button
+            type="button"
+            variant="default"
+            className="shrink-0"
+            onClick={() => setShowKey((v) => !v)}
+          >
+            {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showKey ? t("providers.hide") : t("providers.show")}
+          </Button>
+        </div>
+        <div className="mt-1 text-xs text-slate-400">
+          {t("providers.keyHelp")}
+        </div>
       </Field>
-      <Field label="模型(可选,留空用默认)">
+      <Field label={t("providers.model")}>
         <input
           className={inputCls}
           value={draft.model ?? ""}
@@ -104,15 +122,15 @@ function ProviderForm({
             value={draft.wire_api ?? "chat"}
             onChange={(e) => set({ wire_api: e.target.value })}
           >
-            <option value="chat">chat(OpenAI 兼容网关)</option>
-            <option value="responses">responses(OpenAI 官方)</option>
+            <option value="chat">{t("providers.chatGateway")}</option>
+            <option value="responses">{t("providers.responsesApi")}</option>
           </select>
         </Field>
       )}
       <div className="flex justify-end gap-2 pt-2">
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting && <Loader2 className="animate-spin" size={16} />}
-          保存
+          {t("common.save")}
         </Button>
       </div>
     </form>
@@ -120,6 +138,7 @@ function ProviderForm({
 }
 
 export default function Providers() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [tool, setTool] = useState<Tool>("claude");
   const [draft, setDraft] = useState<Provider | null>(null);
@@ -152,7 +171,7 @@ export default function Providers() {
   const switchM = useMutation({
     mutationFn: (id: string) => ipc.switchProvider(id),
     onSuccess: () => {
-      setMsg({ ok: true, text: "已切换并写入实时配置" });
+      setMsg({ ok: true, text: t("providers.switched") });
       invalidate();
     },
     onError: (e) => setMsg({ ok: false, text: String(e) }),
@@ -173,8 +192,8 @@ export default function Providers() {
   return (
     <>
       <PageHeader
-        title="API 供应商"
-        description="为 Claude 与 Codex 管理并一键切换第三方 API 供应商"
+        title={t("providers.title")}
+        description={t("providers.description")}
         actions={
           <>
             <Button
@@ -190,10 +209,10 @@ export default function Providers() {
               ) : (
                 <Download size={16} />
               )}
-              导入当前
+              {t("providers.importCurrent")}
             </Button>
             <Button variant="primary" onClick={() => setDraft(emptyDraft(tool))}>
-              <Plus size={16} /> 新增
+              <Plus size={16} /> {t("providers.add")}
             </Button>
           </>
         }
@@ -231,10 +250,10 @@ export default function Providers() {
         )}
 
         {isLoading ? (
-          <div className="text-sm text-slate-500">加载中…</div>
+          <div className="text-sm text-slate-500">{t("common.loading")}</div>
         ) : list.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-            还没有 {tool === "claude" ? "Claude" : "Codex"} 供应商,点击右上角「新增」或「导入当前」。
+            {t("providers.empty", { tool: tool === "claude" ? "Claude" : "Codex" })}
           </div>
         ) : (
           <div className="space-y-3">
@@ -252,15 +271,15 @@ export default function Providers() {
                       <span className="text-sm font-semibold text-slate-800">{p.name}</span>
                       {p.active && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                          <CheckCircle2 size={12} /> 已激活
+                          <CheckCircle2 size={12} /> {t("providers.active")}
                         </span>
                       )}
                     </div>
                     <div className="mt-1 truncate text-xs text-slate-500">
-                      {p.base_url || "(未填 Base URL)"}
+                      {p.base_url || t("common.defaultMissingBaseUrl")}
                     </div>
                     <div className="mt-0.5 text-xs text-slate-400">
-                      {maskKey(p.key)}
+                      {maskKey(p.key, t("providers.keyMissing"))}
                       {p.model ? ` · ${p.model}` : ""}
                       {p.tool === "codex" && p.wire_api ? ` · ${p.wire_api}` : ""}
                     </div>
@@ -280,7 +299,7 @@ export default function Providers() {
                         ) : (
                           <Power size={16} />
                         )}
-                        切换
+                        {t("providers.switch")}
                       </Button>
                     )}
                     <Button
@@ -296,10 +315,10 @@ export default function Providers() {
                       ) : (
                         <Plug size={16} />
                       )}
-                      测试
+                      {t("providers.test")}
                     </Button>
                     <Button variant="default" onClick={() => setDraft(p)}>
-                      <Pencil size={16} /> 编辑
+                      <Pencil size={16} /> {t("common.edit")}
                     </Button>
                     {confirmingId === p.id ? (
                       <>
@@ -308,10 +327,10 @@ export default function Providers() {
                           disabled={del.isPending}
                           onClick={() => del.mutate(p.id)}
                         >
-                          确认删除
+                          {t("common.confirmDelete")}
                         </Button>
                         <Button variant="ghost" onClick={() => setConfirmingId(null)}>
-                          取消
+                          {t("common.cancel")}
                         </Button>
                       </>
                     ) : (
@@ -329,7 +348,7 @@ export default function Providers() {
 
       <Modal
         open={draft !== null}
-        title={draft?.id ? "编辑供应商" : "新增供应商"}
+        title={draft?.id ? t("providers.editTitle") : t("providers.addTitle")}
         onClose={() => setDraft(null)}
       >
         {draft && (

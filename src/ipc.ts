@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 export interface AppInfo {
   name: string;
   version: string;
+  update_version: string;
   data_dir: string;
 }
 
@@ -14,6 +15,7 @@ export interface ToolStatus {
   category: ToolCategory;
   installed: boolean;
   version: string | null;
+  available_version: string | null;
   note: string | null;
   install_target: string | null;
 }
@@ -52,6 +54,8 @@ export interface SkillItem {
   category: string;
   content: string;
   installed: boolean;
+  claude_installed: boolean;
+  codex_installed: boolean;
 }
 
 export type McpTarget = "claude_code" | "claude_desktop" | "codex";
@@ -78,6 +82,8 @@ export interface RolePack {
   commands: TemplateFile[];
   memory: string | null;
   applied: boolean;
+  claude_applied: boolean;
+  codex_applied: boolean;
 }
 
 export interface OfficialInstaller {
@@ -155,8 +161,10 @@ export const ipc = {
 
   // 功能 5 市场(Skills + MCP)
   listSkills: () => invoke<SkillItem[]>("list_skills"),
-  installSkill: (id: string) => invoke<void>("install_skill", { id }),
-  removeSkill: (id: string) => invoke<void>("remove_skill", { id }),
+  installSkill: (id: string, target?: "claude" | "codex" | "both") =>
+    invoke<void>("install_skill", { id, target }),
+  removeSkill: (id: string, target?: "claude" | "codex" | "both") =>
+    invoke<void>("remove_skill", { id, target }),
   listMcp: () => invoke<McpServer[]>("list_mcp"),
   applyMcp: (server: McpServer, targets: McpTarget[]) =>
     invoke<void>("apply_mcp", { server, targets }),
@@ -188,6 +196,8 @@ export const ipc = {
     includeThinking: boolean,
     outDir?: string,
   ) => invoke<string>("export_session", { tool, path, includeThinking, outDir }),
+  previewSession: (tool: string, path: string, includeThinking: boolean) =>
+    invoke<string>("preview_session", { tool, path, includeThinking }),
   pickExportDir: (defaultDir?: string) =>
     invoke<string | null>("pick_export_dir", { defaultDir }),
   pickDirectory: (defaultDir?: string) =>

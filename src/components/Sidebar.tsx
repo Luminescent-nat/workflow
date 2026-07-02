@@ -8,25 +8,27 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 import clsx from "clsx";
+import { useI18n } from "@/i18n";
 
 const items = [
-  { to: "/", label: "环境", icon: MonitorCheck, end: true },
-  { to: "/providers", label: "API 供应商", icon: KeyRound, end: false },
-  { to: "/market", label: "市场", icon: Store, end: false },
-  { to: "/roles", label: "角色工作流", icon: Workflow, end: false },
-  { to: "/workspaces", label: "工作区", icon: FolderKanban, end: false },
-  { to: "/settings", label: "设置", icon: SettingsIcon, end: false },
+  { to: "/", labelKey: "nav.environment", icon: MonitorCheck, end: true },
+  { to: "/providers", labelKey: "nav.providers", icon: KeyRound, end: false },
+  { to: "/market", labelKey: "nav.market", icon: Store, end: false },
+  { to: "/roles", labelKey: "nav.roles", icon: Workflow, end: false },
+  { to: "/workspaces", labelKey: "nav.workspaces", icon: FolderKanban, end: false },
+  { to: "/settings", labelKey: "nav.settings", icon: SettingsIcon, end: false },
 ];
 
 export default function Sidebar() {
+  const { t } = useI18n();
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="px-5 py-5">
-        <div className="text-base font-semibold text-slate-900">AI 开发控制台</div>
-        <div className="text-xs text-slate-400">Claude / Codex 一体化</div>
+        <div className="text-base font-semibold text-slate-900">{t("app.name")}</div>
+        <div className="text-xs text-slate-400">{t("app.tagline")}</div>
       </div>
       <nav className="flex-1 space-y-1 px-2">
-        {items.map(({ to, label, icon: Icon, end }) => (
+        {items.map(({ to, labelKey, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -41,11 +43,11 @@ export default function Sidebar() {
             }
           >
             <Icon size={18} />
-            {label}
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>
-      <div className="px-5 py-3 text-xs text-slate-400">v0.1.0 · MVP</div>
+      <div className="px-5 py-3 text-xs text-slate-400">v1.0.0 · MVP</div>
     </aside>
   );
 }

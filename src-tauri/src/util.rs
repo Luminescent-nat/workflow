@@ -1,5 +1,6 @@
 //! 通用工具:进程执行、原子写、JSON 深合并。
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -15,8 +16,101 @@ pub struct CmdOutput {
     pub stderr: String,
 }
 
+#[cfg(windows)]
+fn registry_path(scope: &str) -> Option<String> {
+    let key = match scope {
+        "user" => r"HKCU\Environment",
+        "machine" => r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+        _ => return None,
+    };
+    let out = run_raw("reg", &["query", key, "/v", "Path"]);
+    if !out.success {
+        return None;
+    }
+    out.stdout.lines().find_map(|line| {
+        let text = line.trim_start();
+        if !text.starts_with("Path") {
+            return None;
+        }
+        let mut parts = text.split_whitespace();
+        let _name = parts.next()?;
+        let _typ = parts.next()?;
+        Some(parts.collect::<Vec<_>>().join(" "))
+    })
+}
+
+#[cfg(windows)]
+fn expanded_path(raw: &str) -> String {
+    let mut out = String::new();
+    let mut rest = raw;
+    while let Some(start) = rest.find('%') {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 1..];
+        if let Some(end) = after.find('%') {
+            let name = &after[..end];
+            match std::env::var(name) {
+                Ok(value) => out.push_str(&value),
+                Err(_) => {
+                    out.push('%');
+                    out.push_str(name);
+                    out.push('%');
+                }
+            }
+            rest = &after[end + 1..];
+        } else {
+            out.push_str(&rest[start..]);
+            rest = "";
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+#[cfg(windows)]
+fn merged_windows_path() -> Option<String> {
+    let mut seen = HashSet::new();
+    let mut parts = Vec::new();
+    for raw in [
+        std::env::var("PATH").ok(),
+        registry_path("machine").map(|s| expanded_path(&s)),
+        registry_path("user").map(|s| expanded_path(&s)),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        for p in raw.split(';').map(str::trim).filter(|p| !p.is_empty()) {
+            let key = p.to_ascii_lowercase();
+            if seen.insert(key) {
+                parts.push(p.to_string());
+            }
+        }
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(";"))
+    }
+}
+
+#[cfg(not(windows))]
+fn merged_windows_path() -> Option<String> {
+    None
+}
+
+pub fn refresh_process_path() {
+    if let Some(path) = merged_windows_path() {
+        std::env::set_var("PATH", path);
+    }
+}
+
+pub fn apply_fresh_path(cmd: &mut Command) {
+    if let Some(path) = merged_windows_path() {
+        cmd.env("PATH", path);
+    }
+}
+
 /// 直接运行程序并捕获输出(阻塞至结束)。Windows 下抑制控制台窗口闪烁。
-pub fn run(program: &str, args: &[&str]) -> CmdOutput {
+fn run_raw(program: &str, args: &[&str]) -> CmdOutput {
     let mut cmd = Command::new(program);
     cmd.args(args);
     #[cfg(windows)]
@@ -87,5 +181,30 @@ pub fn deep_merge(base: &mut Value, overlay: &Value) {
         (b, o) => {
             *b = o.clone();
         }
+    }
+}
+
+pub fn run(program: &str, args: &[&str]) -> CmdOutput {
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+    apply_fresh_path(&mut cmd);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    match cmd.output() {
+        Ok(o) => CmdOutput {
+            success: o.status.success(),
+            code: o.status.code(),
+            stdout: String::from_utf8_lossy(&o.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&o.stderr).into_owned(),
+        },
+        Err(e) => CmdOutput {
+            success: false,
+            code: None,
+            stdout: String::new(),
+            stderr: e.to_string(),
+        },
     }
 }

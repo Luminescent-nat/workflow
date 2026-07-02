@@ -15,17 +15,28 @@ import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { ipc, type McpServer, type McpTarget } from "@/ipc";
+import { useI18n } from "@/i18n";
 
 type Msg = { ok: boolean; text: string } | null;
 
 const inputCls =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500";
 
-const MCP_TARGETS: { key: McpTarget; label: string }[] = [
-  { key: "claude_code", label: "Claude Code" },
-  { key: "claude_desktop", label: "Claude 桌面" },
-  { key: "codex", label: "Codex" },
+const MCP_TARGETS: { key: McpTarget; labelKey: string; fallback: string }[] = [
+  { key: "claude_code", labelKey: "mcp.target.claudeCode", fallback: "Claude Code" },
+  { key: "claude_desktop", labelKey: "mcp.target.claudeDesktop", fallback: "Claude Desktop" },
+  { key: "codex", labelKey: "mcp.target.codex", fallback: "Codex" },
 ];
+
+function useMcpTargetLabel() {
+  const { t } = useI18n();
+  return (target: McpTarget) => {
+    const item = MCP_TARGETS.find((m) => m.key === target);
+    if (!item) return target;
+    const label = t(item.labelKey);
+    return label === item.labelKey ? item.fallback : label;
+  };
+}
 
 function Banner({ msg }: { msg: Msg }) {
   if (!msg) return null;
@@ -44,21 +55,34 @@ function Banner({ msg }: { msg: Msg }) {
 }
 
 function SkillsTab() {
+  const { t } = useI18n();
+  const local = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
+  const skillName = (s: { id: string; name: string }) =>
+    local(`catalog.skill.${s.id}.name`, s.name);
+  const skillDescription = (s: { id: string; description: string }) =>
+    local(`catalog.skill.${s.id}.description`, s.description);
+  const categoryName = (category: string) => local(`catalog.skillCategory.${category}`, category);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["skills"], queryFn: ipc.listSkills });
   const [msg, setMsg] = useState<Msg>(null);
+  const [currentCli, setCurrentCli] = useState<"claude" | "codex">("claude");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["skills"] });
   const install = useMutation({
-    mutationFn: (id: string) => ipc.installSkill(id),
+    mutationFn: ({ id, target }: { id: string; target: "claude" | "codex" | "both" }) =>
+      ipc.installSkill(id, target),
     onSuccess: () => {
-      setMsg({ ok: true, text: "已安装到 ~/.claude/skills" });
+      setMsg({ ok: true, text: t("market.skillInstalled") });
       invalidate();
     },
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
   const remove = useMutation({
-    mutationFn: (id: string) => ipc.removeSkill(id),
+    mutationFn: ({ id, target }: { id: string; target: "claude" | "codex" | "both" }) =>
+      ipc.removeSkill(id, target),
     onSuccess: () => invalidate(),
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
@@ -66,16 +90,75 @@ function SkillsTab() {
 
   const skills = data ?? [];
   const categories = Array.from(new Set(skills.map((s) => s.category)));
+  const installedForCli = skills.filter((s) =>
+    currentCli === "claude" ? s.claude_installed : s.codex_installed,
+  );
+  const installedCategories = Array.from(new Set(installedForCli.map((s) => s.category)));
 
-  if (isLoading) return <div className="text-sm text-slate-500">加载中…</div>;
+  if (isLoading) return <div className="text-sm text-slate-500">{t("common.loading")}</div>;
 
   return (
     <div>
       <Banner msg={msg} />
+      <section className="mb-8">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            {t("market.currentInstalled")}
+          </h3>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
+            {(["claude", "codex"] as const).map((cli) => (
+              <button
+                key={cli}
+                onClick={() => setCurrentCli(cli)}
+                className={clsx(
+                  "rounded-md px-3 py-1 text-sm font-medium transition-colors",
+                  currentCli === cli ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100",
+                )}
+              >
+                {cli === "claude" ? "Claude" : "Codex"}
+              </button>
+            ))}
+          </div>
+        </div>
+        {installedForCli.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
+            {t("market.noInstalledSkills")}
+          </div>
+        ) : (
+          installedCategories.map((cat) => (
+            <div key={cat} className="mb-4">
+              <div className="mb-2 text-xs font-medium text-slate-500">{categoryName(cat)}</div>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {installedForCli
+                  .filter((s) => s.category === cat)
+                  .map((s) => (
+                    <div
+                      key={`${currentCli}-${s.id}`}
+                      className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-800">{skillName(s)}</div>
+                        <div className="mt-1 text-xs text-slate-500">{skillDescription(s)}</div>
+                      </div>
+                      <Button
+                        variant="danger"
+                        disabled={busy}
+                        onClick={() => remove.mutate({ id: s.id, target: currentCli })}
+                      >
+                        <Trash2 size={16} /> {t("common.remove")}
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
       {categories.map((cat) => (
         <section key={cat} className="mb-6">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {cat}
+            {t("market.installableCategory", { category: categoryName(cat) })}
           </h3>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {skills
@@ -85,24 +168,49 @@ function SkillsTab() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-800">{s.name}</span>
-                        {s.installed && (
+                        <span className="text-sm font-semibold text-slate-800">{skillName(s)}</span>
+                        {s.claude_installed && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                            <CheckCircle2 size={12} /> 已安装
+                            <CheckCircle2 size={12} /> Claude
+                          </span>
+                        )}
+                        {s.codex_installed && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">
+                            <CheckCircle2 size={12} /> Codex
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">{s.description}</div>
+                      <div className="mt-1 text-xs text-slate-500">{skillDescription(s)}</div>
                     </div>
-                    {s.installed ? (
-                      <Button variant="danger" disabled={busy} onClick={() => remove.mutate(s.id)}>
-                        <Trash2 size={16} /> 移除
-                      </Button>
-                    ) : (
-                      <Button variant="primary" disabled={busy} onClick={() => install.mutate(s.id)}>
-                        <Download size={16} /> 安装
-                      </Button>
-                    )}
+                    <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                      {!s.claude_installed && (
+                        <Button
+                          variant="primary"
+                          disabled={busy}
+                          onClick={() => install.mutate({ id: s.id, target: "claude" })}
+                        >
+                          <Download size={16} /> Claude
+                        </Button>
+                      )}
+                      {!s.codex_installed && (
+                        <Button
+                          variant="primary"
+                          disabled={busy}
+                          onClick={() => install.mutate({ id: s.id, target: "codex" })}
+                        >
+                          <Download size={16} /> Codex
+                        </Button>
+                      )}
+                      {s.installed && (
+                        <Button
+                          variant="danger"
+                          disabled={busy}
+                          onClick={() => remove.mutate({ id: s.id, target: "both" })}
+                        >
+                          <Trash2 size={16} /> {t("common.remove")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -122,6 +230,8 @@ function McpForm({
   onApply: (server: McpServer, targets: McpTarget[]) => void;
   submitting: boolean;
 }) {
+  const { t } = useI18n();
+  const targetLabel = useMcpTargetLabel();
   const [name, setName] = useState(initial.name);
   const [command, setCommand] = useState(initial.command);
   const [argsText, setArgsText] = useState(initial.args.join("\n"));
@@ -157,7 +267,7 @@ function McpForm({
       className="space-y-3"
     >
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">名称(配置键)</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("market.mcpName")}</span>
         <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} required />
       </label>
       <label className="block">
@@ -171,7 +281,7 @@ function McpForm({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">args(每行一个)</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("market.argsHelp")}</span>
         <textarea
           className={clsx(inputCls, "h-20 font-mono")}
           value={argsText}
@@ -179,7 +289,7 @@ function McpForm({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">env(每行 KEY=VALUE)</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("market.envHelp")}</span>
         <textarea
           className={clsx(inputCls, "h-16 font-mono")}
           value={envText}
@@ -187,7 +297,7 @@ function McpForm({
         />
       </label>
       <div>
-        <span className="mb-1 block text-xs font-medium text-slate-600">写入目标</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("market.writeTargets")}</span>
         <div className="flex flex-wrap gap-3">
           {MCP_TARGETS.map((t) => (
             <label key={t.key} className="flex items-center gap-2 text-sm text-slate-700">
@@ -196,7 +306,7 @@ function McpForm({
                 checked={targets.includes(t.key)}
                 onChange={() => toggle(t.key)}
               />
-              {t.label}
+              {targetLabel(t.key)}
             </label>
           ))}
         </div>
@@ -204,7 +314,7 @@ function McpForm({
       <div className="flex justify-end gap-2 pt-2">
         <Button type="submit" variant="primary" disabled={submitting || targets.length === 0}>
           {submitting && <Loader2 className="animate-spin" size={16} />}
-          应用
+          {t("common.apply")}
         </Button>
       </div>
     </form>
@@ -212,6 +322,14 @@ function McpForm({
 }
 
 function McpTab() {
+  const { t } = useI18n();
+  const local = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
+  const mcpDescription = (s: { id: string; description: string }) =>
+    local(`catalog.mcp.${s.id}.description`, s.description);
+  const targetLabel = useMcpTargetLabel();
   const { data, isLoading } = useQuery({ queryKey: ["mcp"], queryFn: ipc.listMcp });
   const [draft, setDraft] = useState<McpServer | null>(null);
   const [imported, setImported] = useState<{ target: McpTarget; list: McpServer[] } | null>(null);
@@ -222,7 +340,7 @@ function McpTab() {
       ipc.applyMcp(server, targets),
     onSuccess: () => {
       setDraft(null);
-      setMsg({ ok: true, text: "已写入所选目标的 MCP 配置" });
+      setMsg({ ok: true, text: t("market.mcpApplied") });
     },
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
@@ -238,7 +356,7 @@ function McpTab() {
     mutationFn: ({ name, targets }: { name: string; targets: McpTarget[] }) =>
       ipc.removeMcp(name, targets),
     onSuccess: (_v, vars) => {
-      setMsg({ ok: true, text: "已移除" });
+      setMsg({ ok: true, text: t("market.removed") });
       importM.mutate(vars.targets[0]);
     },
     onError: (e) => setMsg({ ok: false, text: String(e) }),
@@ -257,12 +375,12 @@ function McpTab() {
             setDraft({ id: "", name: "", description: "", command: "npx", args: [], env: {} })
           }
         >
-          <Plus size={16} /> 新增 MCP
+          <Plus size={16} /> {t("market.addMcp")}
         </Button>
-        <span className="ml-2 text-xs text-slate-400">导入现有:</span>
+        <span className="ml-2 text-xs text-slate-400">{t("market.importExisting")}</span>
         {MCP_TARGETS.map((t) => (
           <Button key={t.key} variant="default" disabled={importM.isPending} onClick={() => importM.mutate(t.key)}>
-            <PackageSearch size={14} /> {t.label}
+            <PackageSearch size={14} /> {targetLabel(t.key)}
           </Button>
         ))}
       </div>
@@ -270,11 +388,13 @@ function McpTab() {
       {imported && (
         <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4">
           <div className="mb-2 text-xs font-semibold text-slate-500">
-            {MCP_TARGETS.find((t) => t.key === imported.target)?.label} 已配置的 MCP（
-            {imported.list.length}）
+            {t("market.configuredMcp", {
+              target: targetLabel(imported.target),
+              count: imported.list.length,
+            })}
           </div>
           {imported.list.length === 0 ? (
-            <div className="text-sm text-slate-400">(无)</div>
+            <div className="text-sm text-slate-400">{t("common.none")}</div>
           ) : (
             <div className="space-y-2">
               {imported.list.map((s) => (
@@ -303,7 +423,7 @@ function McpTab() {
       )}
 
       {isLoading ? (
-        <div className="text-sm text-slate-500">加载中…</div>
+        <div className="text-sm text-slate-500">{t("common.loading")}</div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {catalog.map((s) => (
@@ -311,13 +431,13 @@ function McpTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-slate-800">{s.name}</div>
-                  <div className="mt-1 text-xs text-slate-500">{s.description}</div>
+                  <div className="mt-1 text-xs text-slate-500">{mcpDescription(s)}</div>
                   <div className="mt-1 truncate font-mono text-xs text-slate-400">
                     {s.command} {s.args.join(" ")}
                   </div>
                 </div>
                 <Button variant="default" onClick={() => setDraft(s)}>
-                  <Settings2 size={16} /> 配置
+                  <Settings2 size={16} /> {t("common.configure")}
                 </Button>
               </div>
             </div>
@@ -325,7 +445,7 @@ function McpTab() {
         </div>
       )}
 
-      <Modal open={draft !== null} title="配置 MCP 服务器" onClose={() => setDraft(null)}>
+      <Modal open={draft !== null} title={t("market.configureMcp")} onClose={() => setDraft(null)}>
         {draft && (
           <McpForm
             initial={draft}
@@ -339,6 +459,7 @@ function McpTab() {
 }
 
 export default function Market() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"skills" | "mcp">("skills");
   const [url, setUrl] = useState(() => localStorage.getItem("catalogUrl") ?? "");
@@ -360,19 +481,19 @@ export default function Market() {
   return (
     <>
       <PageHeader
-        title="市场"
-        description="Skills 与 MCP 合并市场,按职业分类浏览、安装与管理"
+        title={t("market.title")}
+        description={t("market.description")}
         actions={
           <>
             <input
               className="w-56 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-slate-500"
-              placeholder="在线目录 URL(可选)"
+              placeholder={t("market.catalogPlaceholder")}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
             <Button variant="default" disabled={refresh.isPending} onClick={() => refresh.mutate()}>
               <RefreshCw size={16} className={refresh.isPending ? "animate-spin" : ""} />
-              在线刷新
+              {t("market.refreshOnline")}
             </Button>
           </>
         }

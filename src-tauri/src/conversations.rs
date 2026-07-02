@@ -478,6 +478,14 @@ pub fn export_to_file(
     Ok(out.to_string_lossy().to_string())
 }
 
+pub fn preview_session(
+    tool: &str,
+    session_path: &str,
+    include_thinking: bool,
+) -> Result<String, String> {
+    build_md(tool, &PathBuf::from(session_path), include_thinking)
+}
+
 pub fn delete_session(data_dir: &Path, session_path: &str) -> Result<(), String> {
     let path = PathBuf::from(session_path);
     snapshots::create(

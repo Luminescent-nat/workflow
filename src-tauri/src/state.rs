@@ -7,7 +7,7 @@ use crate::logs::LogBuffer;
 use crate::store::AppConfig;
 
 pub struct AppState {
-    /// 应用数据目录(%APPDATA%/ai-dev-console)
+    /// 应用数据目录(%APPDATA%/auto-flows)
     pub data_dir: PathBuf,
     /// SSOT 配置文件路径(config.json)
     pub config_path: PathBuf,

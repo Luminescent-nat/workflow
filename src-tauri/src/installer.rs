@@ -62,7 +62,7 @@ fn winget_upgrade(id: &str) -> CmdOutput {
 }
 
 /// 安装目标 key → winget 包 ID。None 表示无对应可安装包(如 codex 桌面版)。
-fn target_id(target: &str) -> Option<&'static str> {
+pub fn target_id(target: &str) -> Option<&'static str> {
     match target {
         "node" => Some("OpenJS.NodeJS.LTS"),
         "git" => Some("Git.Git"),

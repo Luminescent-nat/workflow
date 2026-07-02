@@ -1,55 +1,84 @@
-# AI 开发控制台(AI Dev Console)
+# Auto flows
 
-Claude Code 与 OpenAI Codex 的一体化桌面控制台:环境检测与安装、第三方 API 切换、
-Skills/MCP 市场、多角色工作流、工作区隔离并行、对话导出,以及全程可一键应用 / 一键还原。
+Auto flows is a Windows desktop console for running Claude Code and OpenAI Codex in a managed, project-oriented workflow.
 
-技术栈:**Tauri 2 + Rust + React 19 + TypeScript + Vite + Tailwind CSS v4**。
+It brings environment checks, API provider switching, Skills and MCP management, role workflows, isolated workspaces, conversation export, snapshots, and language switching into one application.
 
-## 环境要求(Windows)
+Current release: **v1.0.0 MVP**
 
-- **Node.js** ≥ 18(已验证 22.x)与 npm
-- **Rust** 工具链(MSVC 目标):`winget install -e --id Rustlang.Rustup`
-- **VS 2022 Build Tools**(C++ 生成工具,用于链接):
-  `winget install -e --id Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`
+## Features
 
-## 开发
+- **Environment management**: detect Node.js, npm, Git, Claude Code CLI, Codex CLI, and Claude Desktop; install, update, or remove supported tools.
+- **Version visibility**: show the current application version and update version on the Environment page.
+- **API providers**: manage Claude and Codex API providers, import existing config, reveal API keys while editing, test connectivity, and switch active providers.
+- **Skills market**: view installed CLI Skills by Claude or Codex, install curated Skills, and remove Skills per target.
+- **MCP market**: configure MCP servers for Claude Code, Claude Desktop, and Codex; import and remove existing MCP entries.
+- **Role workflows**: apply or remove role workflow packs independently for Claude and Codex, with clear per-target status.
+- **Workspaces**: isolate Claude and Codex configuration per project with separate providers, Skills, roles, and launch targets.
+- **Conversation management**: browse global or workspace conversation history, auto-preview selected conversations, export Markdown, and delete sessions with snapshot backup.
+- **Snapshots**: restore previous provider, Skill, MCP, role, and workspace configuration states.
+- **Languages**: switch the interface between English, Japanese, Simplified Chinese, and Traditional Chinese.
 
-```bash
-npm install            # 安装前端依赖
-npm run tauri dev      # 启动桌面应用(开发模式,带热更新)
-```
+## Requirements
 
-仅构建/校验前端:
+- Windows 10 or later
+- Node.js 18 or later
+- npm
+- Rust toolchain with the MSVC target
+- Visual Studio 2022 Build Tools with C++ build tools
+- Optional: Claude Code CLI, Codex CLI, Claude Desktop, Git
 
-```bash
-npm run build          # tsc + vite build,产物在 dist/
-```
+## Installation
 
-仅校验后端:
+Use a packaged release when available. The app stores its configuration under the current Windows user profile and does not require a shared system service.
 
-```bash
-cargo check --manifest-path src-tauri/Cargo.toml
-```
+For source-based use, install the prerequisites above, install dependencies, and launch the Tauri application from the repository root.
 
-## 打包
+## Usage
 
-```bash
-npm run tauri build    # 产出 Windows 安装包(NSIS/MSI)与 EXE
-```
+1. Open **Environment** and confirm the base runtime is ready.
+2. Open **API Providers** and add or import Claude and Codex providers.
+3. Open **Market** to install Skills or configure MCP servers.
+4. Open **Role Workflows** and apply a workflow pack to Claude, Codex, or both.
+5. Open **Workspaces**, create a project workspace, choose providers and optional roles/Skills, then launch Claude or Codex.
+6. Open **Conversation Records** inside Workspaces to preview, export, or delete conversation history.
 
-## 目录结构
+## Configuration
 
-```
-src/                 React 前端
-  pages/             环境 / 供应商 / 市场 / 角色 / 工作区 / 设置
-  components/        共享组件(侧边栏、页头等)
-  store/  ipc.ts     状态与 IPC 封装
-src-tauri/src/       Rust 后端
-  paths.rs           Claude/Codex 配置路径解析
-  util.rs            原子写 / JSON 深合并
-  state.rs           应用全局状态
-  logs.rs            结构化日志(调试中心数据源)
-  snapshots.rs       快照 / 还原引擎(一键还原底座)
-  lib.rs             命令注册与初始化
-src-tauri/catalog/   内置精选目录(Skills / MCP / 角色预设包)
-```
+Auto flows writes tool configuration only through explicit actions such as provider switching, Skill installation, MCP application, role application, or workspace launch.
+
+Global configuration targets include:
+
+- Claude Code: `~/.claude`
+- Claude Desktop MCP config: `%APPDATA%\Claude\claude_desktop_config.json`
+- Codex: `~/.codex`
+
+Workspace isolation uses:
+
+- `<project>/.aiconsole/claude-home`
+- `<project>/.aiconsole/codex-home`
+
+## Safety
+
+- Configuration-changing operations create snapshots before writing.
+- Workspace launches use isolated Claude/Codex homes to avoid polluting global configuration.
+- API keys are persisted in the app configuration and should be handled as secrets.
+- Conversation deletion creates a snapshot backup before removing the selected session file.
+
+## Versioning
+
+The app version is read from the bundled Tauri/Cargo package metadata. The update version is exposed separately so packaged builds can show the target update version.
+
+By default, the update version matches the current version.
+
+## Troubleshooting
+
+- If a CLI works in `cmd` but not inside the app, reopen the app and run Environment detection again.
+- If Node.js or npm was installed during this session, use **Check again** on the Environment page after installation completes.
+- If Codex cannot connect, verify the selected provider, API key, model, and wire API mode.
+- If Claude or Codex launches with unexpected configuration, check whether the workspace is using global defaults or explicit workspace providers.
+- If a configuration change causes problems, open **Settings** and restore a recent snapshot.
+
+## License
+
+No license has been declared yet.

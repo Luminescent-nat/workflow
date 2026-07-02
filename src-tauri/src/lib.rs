@@ -31,14 +31,18 @@ use workspaces::Workspace;
 pub struct AppInfo {
     name: String,
     version: String,
+    update_version: String,
     data_dir: String,
 }
 
 #[tauri::command]
 fn app_info(state: tauri::State<AppState>) -> AppInfo {
     AppInfo {
-        name: "AI 开发控制台".to_string(),
+        name: "Auto flows".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
+        update_version: option_env!("AI_DEV_CONSOLE_UPDATE_VERSION")
+            .unwrap_or(env!("CARGO_PKG_VERSION"))
+            .to_string(),
         data_dir: state.data_dir.to_string_lossy().to_string(),
     }
 }
@@ -54,46 +58,60 @@ fn read_logs(state: tauri::State<AppState>, limit: Option<usize>) -> Vec<LogEntr
 // ---- 功能1/2/3 环境 ----
 
 #[tauri::command]
-fn detect_environment(state: tauri::State<AppState>) -> Vec<env_detect::ToolStatus> {
-    let list = env_detect::detect_all();
+async fn detect_environment(state: tauri::State<'_, AppState>) -> Result<Vec<env_detect::ToolStatus>, String> {
+    let list = tauri::async_runtime::spawn_blocking(env_detect::detect_all)
+        .await
+        .map_err(|e| e.to_string())?;
     state.log("info", "env", format!("环境检测完成: {} 项", list.len()));
-    list
+    Ok(list)
 }
 
 #[tauri::command]
-fn install_tool(state: tauri::State<AppState>, target: String) -> CmdOutput {
+async fn install_tool(state: tauri::State<'_, AppState>, target: String) -> Result<CmdOutput, String> {
     state.log("info", "installer", format!("开始安装: {}", target));
-    let out = installer::install(&target);
+    let target_for_task = target.clone();
+    let out = tauri::async_runtime::spawn_blocking(move || installer::install(&target_for_task))
+        .await
+        .map_err(|e| e.to_string())?;
+    util::refresh_process_path();
     state.log(
         if out.success { "info" } else { "error" },
         "installer",
         format!("安装结束 {}: success={} code={:?}", target, out.success, out.code),
     );
-    out
+    Ok(out)
 }
 
 #[tauri::command]
-fn uninstall_tool(state: tauri::State<AppState>, target: String) -> CmdOutput {
+async fn uninstall_tool(state: tauri::State<'_, AppState>, target: String) -> Result<CmdOutput, String> {
     state.log("info", "installer", format!("开始卸载: {}", target));
-    let out = installer::uninstall(&target);
+    let target_for_task = target.clone();
+    let out = tauri::async_runtime::spawn_blocking(move || installer::uninstall(&target_for_task))
+        .await
+        .map_err(|e| e.to_string())?;
+    util::refresh_process_path();
     state.log(
         if out.success { "info" } else { "error" },
         "installer",
         format!("卸载结束 {}: success={}", target, out.success),
     );
-    out
+    Ok(out)
 }
 
 #[tauri::command]
-fn update_tool(state: tauri::State<AppState>, target: String) -> CmdOutput {
+async fn update_tool(state: tauri::State<'_, AppState>, target: String) -> Result<CmdOutput, String> {
     state.log("info", "installer", format!("开始更新: {}", target));
-    let out = installer::update(&target);
+    let target_for_task = target.clone();
+    let out = tauri::async_runtime::spawn_blocking(move || installer::update(&target_for_task))
+        .await
+        .map_err(|e| e.to_string())?;
+    util::refresh_process_path();
     state.log(
         if out.success { "info" } else { "error" },
         "installer",
         format!("更新结束 {}: success={}", target, out.success),
     );
-    out
+    Ok(out)
 }
 
 // ---- 功能4 供应商 ----
@@ -150,20 +168,22 @@ fn list_skills(state: tauri::State<AppState>) -> Vec<SkillItem> {
 }
 
 #[tauri::command]
-fn install_skill(state: tauri::State<AppState>, id: String) -> Result<(), String> {
-    let r = market::install_skill(&state.data_dir, &id);
+fn install_skill(state: tauri::State<AppState>, id: String, target: Option<String>) -> Result<(), String> {
+    let target = target.unwrap_or_else(|| "claude".to_string());
+    let r = market::install_skill_for(&state.data_dir, &id, &target);
     state.log(
         if r.is_ok() { "info" } else { "error" },
         "market",
-        format!("安装 skill {}: {}", id, if r.is_ok() { "ok".into() } else { format!("{:?}", r) }),
+        format!("安装 skill {} -> {}: {}", id, target, if r.is_ok() { "ok".into() } else { format!("{:?}", r) }),
     );
     r
 }
 
 #[tauri::command]
-fn remove_skill(state: tauri::State<AppState>, id: String) -> Result<(), String> {
-    let r = market::remove_skill(&state.data_dir, &id);
-    state.log("info", "market", format!("移除 skill {}", id));
+fn remove_skill(state: tauri::State<AppState>, id: String, target: Option<String>) -> Result<(), String> {
+    let target = target.unwrap_or_else(|| "both".to_string());
+    let r = market::remove_skill_for(&state.data_dir, &id, &target);
+    state.log("info", "market", format!("移除 skill {} -> {}", id, target));
     r
 }
 
@@ -273,7 +293,7 @@ fn delete_workspace(state: tauri::State<AppState>, id: String) -> Result<(), Str
 }
 
 #[tauri::command]
-fn materialize_workspace(state: tauri::State<AppState>, id: String) -> Result<(), String> {
+async fn materialize_workspace(state: tauri::State<'_, AppState>, id: String) -> Result<(), String> {
     let (ws, provs) = {
         let cfg = state.config.lock().map_err(|_| "配置锁定失败".to_string())?;
         let ws = cfg
@@ -284,7 +304,13 @@ fn materialize_workspace(state: tauri::State<AppState>, id: String) -> Result<()
             .ok_or_else(|| "工作区不存在".to_string())?;
         (ws, cfg.providers.clone())
     };
-    let r = workspaces::materialize(&state.data_dir, &ws, &provs);
+    let data_dir = state.data_dir.clone();
+    let ws_for_task = ws.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        workspaces::materialize(&data_dir, &ws_for_task, &provs)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
     state.log(
         if r.is_ok() { "info" } else { "error" },
         "workspaces",
@@ -294,8 +320,8 @@ fn materialize_workspace(state: tauri::State<AppState>, id: String) -> Result<()
 }
 
 #[tauri::command]
-fn launch_workspace(
-    state: tauri::State<AppState>,
+async fn launch_workspace(
+    state: tauri::State<'_, AppState>,
     id: String,
     tool: String,
 ) -> Result<(), String> {
@@ -309,8 +335,15 @@ fn launch_workspace(
             .ok_or_else(|| "工作区不存在".to_string())?;
         (ws, cfg.providers.clone())
     };
-    workspaces::materialize(&state.data_dir, &ws, &provs)?;
-    let r = workspaces::launch(&ws, &tool);
+    let data_dir = state.data_dir.clone();
+    let ws_for_task = ws.clone();
+    let tool_for_task = tool.clone();
+    let r = tauri::async_runtime::spawn_blocking(move || {
+        workspaces::materialize(&data_dir, &ws_for_task, &provs)?;
+        workspaces::launch(&ws_for_task, &tool_for_task)
+    })
+    .await
+    .map_err(|e| e.to_string())?;
     state.log(
         if r.is_ok() { "info" } else { "error" },
         "workspaces",
@@ -347,6 +380,15 @@ fn export_session(
         format!("导出会话 {} (思考={})", path, include_thinking),
     );
     r
+}
+
+#[tauri::command]
+fn preview_session(
+    tool: String,
+    path: String,
+    include_thinking: bool,
+) -> Result<String, String> {
+    conversations::preview_session(&tool, &path, include_thinking)
 }
 
 /// 弹原生文件夹选择器,返回所选目录(取消返回 None)。default_dir 作为初始目录。
@@ -445,7 +487,7 @@ pub fn run() {
         .setup(|app| {
             let data_dir = dirs::data_dir()
                 .unwrap_or_else(std::env::temp_dir)
-                .join("ai-dev-console");
+                .join("auto-flows");
             let _ = std::fs::create_dir_all(&data_dir);
 
             let log_file = data_dir.join("logs").join("app.log");
@@ -496,6 +538,7 @@ pub fn run() {
             launch_workspace,
             list_sessions,
             export_session,
+            preview_session,
             delete_session,
             pick_export_dir,
             pick_directory,

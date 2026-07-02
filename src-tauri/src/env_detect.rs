@@ -1,5 +1,6 @@
 //! 功能1/2/3:环境检测。检测 Node/npm/git 与 Claude/Codex 的 CLI 及桌面版。
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 use serde::Serialize;
@@ -15,6 +16,7 @@ pub struct ToolStatus {
     pub category: String,
     pub installed: bool,
     pub version: Option<String>,
+    pub available_version: Option<String>,
     /// 额外说明(如不可安装的原因)
     pub note: Option<String>,
     /// 对应的安装目标 key(传给 install_tool);None 表示不可一键安装
@@ -94,7 +96,6 @@ fn git_candidates() -> Vec<PathBuf> {
     v
 }
 
-
 /// 通过 winget list 判断某包是否已安装。
 fn winget_has(id: &str) -> bool {
     let out = util::run(
@@ -111,8 +112,58 @@ fn winget_has(id: &str) -> bool {
     out.stdout.contains(id)
 }
 
+fn winget_show_version(id: &str) -> Option<String> {
+    let out = util::run(
+        &installer::winget_path(),
+        &[
+            "show",
+            "--id",
+            id,
+            "-e",
+            "--accept-source-agreements",
+            "--disable-interactivity",
+        ],
+    );
+    if !out.success {
+        return None;
+    }
+    for line in out.stdout.lines() {
+        let Some((key, value)) = line.split_once(':') else {
+            continue;
+        };
+        let key = key.trim().to_lowercase();
+        let value = value.trim();
+        if value.is_empty() {
+            continue;
+        }
+        if key == "version" || key == "版本" {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+fn available_versions(targets: &[&str]) -> BTreeMap<String, Option<String>> {
+    let mut out = BTreeMap::new();
+    for target in targets {
+        if out.contains_key(*target) {
+            continue;
+        }
+        let version = installer::target_id(target).and_then(winget_show_version);
+        out.insert((*target).to_string(), version);
+    }
+    out
+}
+
 pub fn detect_all() -> Vec<ToolStatus> {
     let mut list = Vec::new();
+    let versions = available_versions(&[
+        "node",
+        "git",
+        "claude_cli",
+        "codex_cli",
+        "claude_desktop",
+    ]);
 
     let node = version_of("node", "-v");
     list.push(ToolStatus {
@@ -121,6 +172,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "runtime".into(),
         installed: node.is_some(),
         version: node,
+        available_version: versions.get("node").cloned().flatten(),
         note: None,
         install_target: Some("node".into()),
     });
@@ -132,6 +184,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "runtime".into(),
         installed: npm.is_some(),
         version: npm,
+        available_version: versions.get("node").cloned().flatten(),
         note: Some("随 Node.js 一并安装".into()),
         install_target: Some("node".into()),
     });
@@ -143,6 +196,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "runtime".into(),
         installed: git.is_some(),
         version: git,
+        available_version: versions.get("git").cloned().flatten(),
         note: None,
         install_target: Some("git".into()),
     });
@@ -154,6 +208,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "cli".into(),
         installed: claude.is_some(),
         version: claude,
+        available_version: versions.get("claude_cli").cloned().flatten(),
         note: None,
         install_target: Some("claude_cli".into()),
     });
@@ -165,6 +220,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "cli".into(),
         installed: codex.is_some(),
         version: codex,
+        available_version: versions.get("codex_cli").cloned().flatten(),
         note: None,
         install_target: Some("codex_cli".into()),
     });
@@ -176,6 +232,7 @@ pub fn detect_all() -> Vec<ToolStatus> {
         category: "desktop".into(),
         installed: claude_desktop,
         version: None,
+        available_version: versions.get("claude_desktop").cloned().flatten(),
         note: None,
         install_target: Some("claude_desktop".into()),
     });

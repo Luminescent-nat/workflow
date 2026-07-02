@@ -7,7 +7,7 @@ use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{providers, roles};
+use crate::{providers, roles, util};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Workspace {
@@ -129,8 +129,31 @@ pub fn materialize(
                 )?;
             }
         }
+        if let Some(rid) = &ws.role_id {
+            let scope = format!("ws:{}", home.to_string_lossy());
+            roles::apply(data_dir, rid, &scope)?;
+        }
+        for sid in &ws.skills {
+            crate::market::install_skill_into(&home.join("skills"), sid, data_dir)?;
+        }
     }
     Ok(())
+}
+
+fn cmd_set_path_line() -> String {
+    match std::env::var("PATH") {
+        Ok(path) if !path.trim().is_empty() => format!("set \"PATH={}\"", path),
+        _ => "rem PATH unchanged".to_string(),
+    }
+}
+
+fn codex_api_key(home: &Path) -> Option<String> {
+    let auth = home.join("auth.json");
+    std::fs::read(&auth)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .and_then(|v| v.get("OPENAI_API_KEY").and_then(|x| x.as_str()).map(str::to_string))
+        .filter(|k| !k.is_empty())
 }
 
 /// 在外部终端启动隔离实例(注入 CLAUDE_CONFIG_DIR / CODEX_HOME)。
@@ -139,18 +162,22 @@ pub fn launch(ws: &Workspace, tool: &str) -> Result<(), String> {
     if project.trim().is_empty() {
         return Err("工作区未设置项目路径".to_string());
     }
+    util::refresh_process_path();
     let (var, home, cli) = match tool {
         "claude" => ("CLAUDE_CONFIG_DIR", claude_home(ws), "claude"),
         "codex" => ("CODEX_HOME", codex_home(ws), "codex"),
         other => return Err(format!("未知工具: {}", other)),
     };
     let home_s = home.to_string_lossy().to_string();
+    let path_line = cmd_set_path_line();
+    let codex_key = if tool == "codex" { codex_api_key(&home) } else { None };
 
     let aiconsole = PathBuf::from(&project).join(".aiconsole");
     std::fs::create_dir_all(&aiconsole).map_err(|e| e.to_string())?;
     let bat = aiconsole.join(format!("launch-{}.bat", tool));
     let content = format!(
-        "@echo off\r\nset \"{var}={home}\"\r\ncd /d \"{proj}\"\r\necho [AI Dev Console] {cli}  (隔离配置目录: {home})\r\n{cli}\r\n",
+        "@echo off\r\nchcp 65001 >nul\r\n{path_line}\r\nset \"{var}={home}\"\r\ncd /d \"{proj}\"\r\necho [Auto flows] {cli}  (isolated config: {home})\r\nwhere {cli}\r\n{cli}\r\n",
+        path_line = path_line,
         var = var,
         home = home_s,
         proj = project,
@@ -160,7 +187,11 @@ pub fn launch(ws: &Workspace, tool: &str) -> Result<(), String> {
     let bat_s = bat.to_string_lossy().to_string();
 
     let mut c = Command::new("cmd");
-    c.args(["/c", "start", "AI Dev Console", "cmd", "/k", &bat_s]);
+    util::apply_fresh_path(&mut c);
+    if let Some(key) = codex_key {
+        c.env("OPENAI_API_KEY", key);
+    }
+    c.args(["/c", "start", "Auto flows", "cmd", "/k", &bat_s]);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;

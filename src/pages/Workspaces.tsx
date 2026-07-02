@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -15,6 +15,7 @@ import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { ipc, type Workspace, type Provider, type RolePack, type SkillItem, type SessionInfo } from "@/ipc";
+import { useI18n } from "@/i18n";
 
 type Msg = { ok: boolean; text: string } | null;
 
@@ -68,6 +69,11 @@ function WorkspaceForm({
   onChange: (w: Workspace) => void;
   onSubmit: () => void;
 }) {
+  const { t } = useI18n();
+  const local = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const set = (patch: Partial<Workspace>) => onChange({ ...draft, ...patch });
   const claudeProvs = providers.filter((p) => p.tool === "claude");
   const codexProvs = providers.filter((p) => p.tool === "codex");
@@ -88,21 +94,21 @@ function WorkspaceForm({
     >
       {(noClaudeProv || noCodexProv) && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          {noClaudeProv && <div>尚未配置 Claude 供应商,请先到「API 供应商」页添加,否则启动后无法调用 API。</div>}
-          {noCodexProv && <div>尚未配置 Codex 供应商,请先到「API 供应商」页添加 Codex 供应商。</div>}
+          {noClaudeProv && <div>{t("workspaces.noClaudeProvider")}</div>}
+          {noCodexProv && <div>{t("workspaces.noCodexProvider")}</div>}
         </div>
       )}
       {(claudeUnset || codexUnset) && (
         <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
-          下方供应商保持"全局默认"时,该工具将沿用全局配置;建议为本工作区显式选择供应商以确保隔离。
+          {t("workspaces.globalProviderHelp")}
         </div>
       )}
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">名称</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.name")}</span>
         <input className={inputCls} value={draft.name} onChange={(e) => set({ name: e.target.value })} required />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">项目路径</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.projectPath")}</span>
         <div className="flex gap-2">
           <input
             className={inputCls}
@@ -119,12 +125,12 @@ function WorkspaceForm({
               if (dir) set({ project_path: dir });
             }}
           >
-            浏览
+            {t("common.browse")}
           </Button>
         </div>
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">工具</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.tool")}</span>
         <select
           className={inputCls}
           value={draft.tool}
@@ -132,18 +138,18 @@ function WorkspaceForm({
         >
           <option value="claude">Claude</option>
           <option value="codex">Codex</option>
-          <option value="both">两者</option>
+          <option value="both">{t("common.both")}</option>
         </select>
       </label>
       {showClaude && (
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Claude 供应商</span>
+          <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.claudeProvider")}</span>
           <select
             className={inputCls}
             value={draft.claude_provider_id ?? ""}
             onChange={(e) => set({ claude_provider_id: e.target.value || null })}
           >
-            <option value="">(使用全局默认)</option>
+            <option value="">{t("common.globalDefault")}</option>
             {claudeProvs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -154,13 +160,13 @@ function WorkspaceForm({
       )}
       {showCodex && (
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Codex 供应商</span>
+          <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.codexProvider")}</span>
           <select
             className={inputCls}
             value={draft.codex_provider_id ?? ""}
             onChange={(e) => set({ codex_provider_id: e.target.value || null })}
           >
-            <option value="">(使用全局默认)</option>
+            <option value="">{t("common.globalDefault")}</option>
             {codexProvs.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -170,25 +176,25 @@ function WorkspaceForm({
         </label>
       )}
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">模型(可选)</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.modelOptional")}</span>
         <input
           className={inputCls}
           value={draft.model ?? ""}
           onChange={(e) => set({ model: e.target.value || null })}
-          placeholder="留空用供应商默认"
+          placeholder={t("workspaces.modelPlaceholder")}
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">角色工作流(可选)</span>
+        <span className="mb-1 block text-xs font-medium text-slate-600">{t("workspaces.roleOptional")}</span>
         <select
           className={inputCls}
           value={draft.role_id ?? ""}
           onChange={(e) => set({ role_id: e.target.value || null })}
         >
-          <option value="">(不应用)</option>
+          <option value="">{t("common.doNotApply")}</option>
           {roles.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.name}
+              {local(`catalog.role.${r.id}.name`, r.name)}
             </option>
           ))}
         </select>
@@ -196,7 +202,7 @@ function WorkspaceForm({
       {skills.length > 0 && (
         <div>
           <span className="mb-1 block text-xs font-medium text-slate-600">
-            Skills(可选,物化时写入工作区隔离目录)
+            {t("workspaces.skillsOptional")}
           </span>
           <div className="flex flex-wrap gap-2">
             {skills.map((s) => {
@@ -217,7 +223,7 @@ function WorkspaceForm({
                       })
                     }
                   />
-                  {s.name}
+                  {local(`catalog.skill.${s.id}.name`, s.name)}
                 </label>
               );
             })}
@@ -227,7 +233,7 @@ function WorkspaceForm({
       <div className="flex justify-end gap-2 pt-2">
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting && <Loader2 className="animate-spin" size={16} />}
-          保存
+          {t("common.save")}
         </Button>
       </div>
     </form>
@@ -235,6 +241,11 @@ function WorkspaceForm({
 }
 
 function WorkspacesTab() {
+  const { t } = useI18n();
+  const local = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const qc = useQueryClient();
   const { data: workspaces, isLoading } = useQuery({
     queryKey: ["workspaces"],
@@ -256,6 +267,7 @@ function WorkspacesTab() {
 
   const providers = [...(claudeProv ?? []), ...(codexProv ?? [])];
   const roles = rolesView?.packs ?? [];
+  const skills = skillList ?? [];
   const invalidate = () => qc.invalidateQueries({ queryKey: ["workspaces"] });
 
   const upsert = useMutation({
@@ -276,27 +288,34 @@ function WorkspacesTab() {
   });
   const launch = useMutation({
     mutationFn: ({ id, tool }: { id: string; tool: string }) => ipc.launchWorkspace(id, tool),
-    onSuccess: () => setMsg({ ok: true, text: "已在外部终端启动(隔离配置已写入)" }),
+    onSuccess: () => setMsg({ ok: true, text: t("workspaces.launchSuccess") }),
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
 
   const list = workspaces ?? [];
   const provName = (id: string | null) => providers.find((p) => p.id === id)?.name;
-  const roleName = (id: string | null) => roles.find((r) => r.id === id)?.name;
+  const roleName = (id: string | null) => {
+    const role = roles.find((r) => r.id === id);
+    return role ? local(`catalog.role.${role.id}.name`, role.name) : null;
+  };
+  const skillName = (id: string) => {
+    const skill = skills.find((s) => s.id === id);
+    return skill ? local(`catalog.skill.${skill.id}.name`, skill.name) : id;
+  };
 
   return (
     <div>
       <div className="mb-4 flex justify-end">
         <Button variant="primary" onClick={() => setDraft(emptyWs())}>
-          <Plus size={16} /> 新增工作区
+          <Plus size={16} /> {t("workspaces.add")}
         </Button>
       </div>
       <Banner msg={msg} />
       {isLoading ? (
-        <div className="text-sm text-slate-500">加载中…</div>
+        <div className="text-sm text-slate-500">{t("common.loading")}</div>
       ) : list.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          还没有工作区。新增后可为不同项目隔离配置并行运行 Claude / Codex。
+          {t("workspaces.empty")}
         </div>
       ) : (
         <div className="space-y-3">
@@ -315,13 +334,36 @@ function WorkspacesTab() {
                   </div>
                   <div className="mt-0.5 text-xs text-slate-400">
                     {(w.tool === "claude" || w.tool === "both") &&
-                      `Claude: ${provName(w.claude_provider_id ?? w.provider_id) ?? "(全局默认)"}`}
+                      t("workspaces.providerLine", {
+                        tool: "Claude",
+                        provider:
+                          provName(w.claude_provider_id ?? w.provider_id) ??
+                          t("common.globalDefault"),
+                      })}
                     {w.tool === "both" ? " · " : ""}
                     {(w.tool === "codex" || w.tool === "both") &&
-                      `Codex: ${provName(w.codex_provider_id ?? w.provider_id) ?? "(全局默认)"}`}
+                      t("workspaces.providerLine", {
+                        tool: "Codex",
+                        provider:
+                          provName(w.codex_provider_id ?? w.provider_id) ??
+                          t("common.globalDefault"),
+                      })}
                     {w.model ? ` · ${w.model}` : ""}
-                    {w.role_id ? ` · 角色: ${roleName(w.role_id) ?? w.role_id}` : ""}
+                    {w.role_id
+                      ? ` · ${t("workspaces.roleLine", {
+                          role: roleName(w.role_id) ?? w.role_id,
+                        })}`
+                      : ""}
                   </div>
+                  {w.skills.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {w.skills.map((id) => (
+                        <span key={id} className="rounded bg-sky-50 px-2 py-0.5 text-xs text-sky-700">
+                          {skillName(id)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                   {(w.tool === "claude" || w.tool === "both") && (
@@ -354,10 +396,10 @@ function WorkspacesTab() {
                   {confirmId === w.id ? (
                     <>
                       <Button variant="danger" disabled={del.isPending} onClick={() => del.mutate(w.id)}>
-                        确认删除
+                        {t("common.confirmDelete")}
                       </Button>
                       <Button variant="ghost" onClick={() => setConfirmId(null)}>
-                        取消
+                        {t("common.cancel")}
                       </Button>
                     </>
                   ) : (
@@ -374,7 +416,7 @@ function WorkspacesTab() {
 
       <Modal
         open={draft !== null}
-        title={draft?.id ? "编辑工作区" : "新增工作区"}
+        title={draft?.id ? t("workspaces.editTitle") : t("workspaces.addTitle")}
         onClose={() => setDraft(null)}
       >
         {draft && (
@@ -400,13 +442,29 @@ function fmtSize(n: number): string {
 }
 
 function SessionsTab() {
+  const { t } = useI18n();
   const [tool, setTool] = useState<"claude" | "codex">("claude");
+  const { data: workspaces } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: ipc.listWorkspaces,
+  });
+  const workspaceList = workspaces ?? [];
+  const [sessionSource, setSessionSource] = useState("global");
+  const selectedWorkspace =
+    sessionSource === "global"
+      ? null
+      : workspaceList.find((w) => w.id === sessionSource) ?? null;
+  const configDir =
+    selectedWorkspace == null
+      ? undefined
+      : `${selectedWorkspace.project_path}\\.aiconsole\\${tool === "claude" ? "claude-home" : "codex-home"}`;
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["sessions", tool],
-    queryFn: () => ipc.listSessions(tool),
+    queryKey: ["sessions", tool, configDir],
+    queryFn: () => ipc.listSessions(tool, configDir),
   });
   const [thinking, setThinking] = useState(false);
   const [confirmPath, setConfirmPath] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ session: SessionInfo; text: string } | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
 
   const exportM = useMutation({
@@ -417,20 +475,37 @@ function SessionsTab() {
       return ipc.exportSession(tool, s.path, thinking, dir);
     },
     onSuccess: (out) =>
-      setMsg(out ? { ok: true, text: `已导出到:${out}` } : null),
+      setMsg(out ? { ok: true, text: t("sessions.exported", { path: out }) } : null),
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
   const del = useMutation({
     mutationFn: (path: string) => ipc.deleteSession(path),
     onSuccess: () => {
       setConfirmPath(null);
-      setMsg({ ok: true, text: "已删除(删除前已快照备份)" });
+      setMsg({ ok: true, text: t("sessions.deleted") });
       refetch();
     },
     onError: (e) => setMsg({ ok: false, text: String(e) }),
   });
+  const previewM = useMutation({
+    mutationFn: (s: SessionInfo) => ipc.previewSession(tool, s.path, thinking),
+    onSuccess: (text, s) => setPreview({ session: s, text }),
+    onError: (e) => setMsg({ ok: false, text: String(e) }),
+  });
 
   const list = data ?? [];
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (list.length === 0) {
+      setPreview(null);
+      return;
+    }
+    const current = preview?.session;
+    const next = current && list.some((s) => s.path === current.path) ? current : list[0];
+    previewM.mutate(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, isLoading, thinking, tool]);
 
   return (
     <div>
@@ -449,67 +524,151 @@ function SessionsTab() {
             </button>
           ))}
         </div>
+        <select
+          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-slate-500"
+          value={sessionSource}
+          onChange={(e) => {
+            setPreview(null);
+            setSessionSource(e.target.value);
+          }}
+        >
+          <option value="global">{t("sessions.globalHistory")}</option>
+          {workspaceList.map((w) => (
+            <option key={w.id} value={w.id}>
+              {t("sessions.workspaceSource", { name: w.name })}
+            </option>
+          ))}
+        </select>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" checked={thinking} onChange={(e) => setThinking(e.target.checked)} />
-          导出时包含思考内容
+          {t("sessions.includeThinking")}
         </label>
         <span className="text-xs text-slate-400">
-          来源:{tool === "claude" ? "~/.claude/projects" : "~/.codex/sessions"}
+          {t("sessions.source")}
+          {sessionSource === "global"
+            ? tool === "claude"
+              ? "~/.claude"
+              : "~/.codex"
+            : configDir}
         </span>
       </div>
       <Banner msg={msg} />
       {isLoading ? (
-        <div className="text-sm text-slate-500">加载中…</div>
+        <div className="text-sm text-slate-500">{t("common.loading")}</div>
       ) : list.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          未发现{tool === "claude" ? " Claude " : " Codex "}会话记录。
+          {t("sessions.empty", { tool: tool === "claude" ? "Claude" : "Codex" })}
         </div>
       ) : (
-        <div className="space-y-2">
-          {list.map((s) => (
-            <div
-              key={s.path}
-              className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3"
-            >
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium text-slate-800">{s.title}</div>
-                <div className="text-xs text-slate-400">
-                  {s.modified} · {fmtSize(s.size)}
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  variant="default"
-                  disabled={exportM.isPending}
+        <div className="grid gap-4 lg:grid-cols-[minmax(360px,1fr)_minmax(380px,42%)]">
+          <div className="max-h-[calc(100vh-230px)] min-h-[460px] space-y-2 overflow-auto pr-1">
+            {list.map((s) => {
+              const active = preview?.session.path === s.path;
+              return (
+                <div
+                  key={s.path}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     setMsg(null);
-                    exportM.mutate(s);
+                    previewM.mutate(s);
                   }}
-                >
-                  {exportM.isPending && exportM.variables?.path === s.path ? (
-                    <Loader2 className="animate-spin" size={16} />
-                  ) : (
-                    <FileDown size={16} />
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setMsg(null);
+                      previewM.mutate(s);
+                    }
+                  }}
+                  className={clsx(
+                    "cursor-pointer rounded-xl border bg-white p-3 transition-colors hover:bg-slate-50",
+                    active ? "border-slate-500 ring-1 ring-slate-300" : "border-slate-200",
                   )}
-                  导出 MD
-                </Button>
-                {confirmPath === s.path ? (
-                  <>
-                    <Button variant="danger" disabled={del.isPending} onClick={() => del.mutate(s.path)}>
-                      确认删除
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-slate-800">{s.title}</div>
+                    <div className="text-xs text-slate-400">
+                      {s.modified} · {fmtSize(s.size)}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="default"
+                      disabled={exportM.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMsg(null);
+                        exportM.mutate(s);
+                      }}
+                    >
+                      {exportM.isPending && exportM.variables?.path === s.path ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : (
+                        <FileDown size={16} />
+                      )}
+                      {t("sessions.exportMd")}
                     </Button>
-                    <Button variant="ghost" onClick={() => setConfirmPath(null)}>
-                      取消
-                    </Button>
-                  </>
-                ) : (
-                  <Button variant="danger" onClick={() => setConfirmPath(s.path)}>
-                    <Trash2 size={16} />
-                  </Button>
+                    {confirmPath === s.path ? (
+                      <>
+                        <Button
+                          variant="danger"
+                          disabled={del.isPending}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            del.mutate(s.path);
+                          }}
+                        >
+                          {t("common.confirmDelete")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmPath(null);
+                          }}
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmPath(s.path);
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <aside className="h-[calc(100vh-230px)] min-h-[460px] overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="flex h-12 items-center justify-between border-b border-slate-200 px-4">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-slate-800">
+                  {preview?.session.title ?? t("sessions.previewTitle")}
+                </div>
+                {preview && (
+                  <div className="truncate text-xs text-slate-400">{preview.session.path}</div>
                 )}
               </div>
             </div>
-          ))}
+            <div className="h-[calc(100%-3rem)] overflow-auto bg-slate-50 p-4">
+              {preview ? (
+                <pre className="whitespace-pre-wrap break-words text-sm leading-6 text-slate-800">
+                  {preview.text || t("sessions.emptySession")}
+                </pre>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                  {t("sessions.previewHint")}
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       )}
     </div>
@@ -517,12 +676,13 @@ function SessionsTab() {
 }
 
 export default function Workspaces() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"ws" | "sessions">("ws");
   return (
     <>
       <PageHeader
-        title="工作区"
-        description="为不同项目隔离配置,并行运行多个 Claude / Codex;导出与管理对话记录"
+        title={t("workspaces.title")}
+        description={t("workspaces.description")}
       />
       <div className="px-8 py-6">
         <div className="mb-5 inline-flex rounded-lg border border-slate-200 bg-white p-1">
@@ -533,7 +693,7 @@ export default function Workspaces() {
               tab === "ws" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100",
             )}
           >
-            <FolderKanban size={16} /> 工作区
+            <FolderKanban size={16} /> {t("workspaces.tab.workspaces")}
           </button>
           <button
             onClick={() => setTab("sessions")}
@@ -542,7 +702,7 @@ export default function Workspaces() {
               tab === "sessions" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100",
             )}
           >
-            <MessageSquare size={16} /> 对话记录
+            <MessageSquare size={16} /> {t("workspaces.tab.sessions")}
           </button>
         </div>
 

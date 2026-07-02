@@ -23,6 +23,10 @@ pub struct SkillItem {
     pub content: String,
     #[serde(default)]
     pub installed: bool,
+    #[serde(default)]
+    pub claude_installed: bool,
+    #[serde(default)]
+    pub codex_installed: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -52,7 +56,9 @@ pub fn skills_catalog(data_dir: &Path) -> Vec<SkillItem> {
         .unwrap_or_else(|_| SKILLS_JSON.to_string());
     let mut items: Vec<SkillItem> = serde_json::from_str(&raw).unwrap_or_default();
     for it in &mut items {
-        it.installed = skill_installed(&it.id);
+        it.claude_installed = skill_installed_in(&paths::claude_skills_dir(), &it.id);
+        it.codex_installed = skill_installed_in(&paths::codex_dir().join("skills"), &it.id);
+        it.installed = it.claude_installed || it.codex_installed;
     }
     items
 }
@@ -68,8 +74,8 @@ pub fn mcp_catalog(data_dir: &Path) -> Vec<McpServer> {
 fn skill_dir(id: &str) -> PathBuf {
     paths::claude_skills_dir().join(id)
 }
-fn skill_installed(id: &str) -> bool {
-    skill_dir(id).join("SKILL.md").exists()
+fn skill_installed_in(skills_dir: &Path, id: &str) -> bool {
+    skills_dir.join(id).join("SKILL.md").exists()
 }
 
 fn write_skill(skills_dir: &Path, item: &SkillItem) -> Result<(), String> {
@@ -83,20 +89,36 @@ fn write_skill(skills_dir: &Path, item: &SkillItem) -> Result<(), String> {
 }
 
 pub fn install_skill(data_dir: &Path, id: &str) -> Result<(), String> {
+    install_skill_for(data_dir, id, "claude")
+}
+
+pub fn install_skill_for(data_dir: &Path, id: &str, target: &str) -> Result<(), String> {
     let item = skills_catalog(data_dir)
         .into_iter()
         .find(|s| s.id == id)
         .ok_or_else(|| "skill 不存在".to_string())?;
-    let dir = skill_dir(&item.id);
-    snapshots::create(
-        data_dir,
-        "skills",
-        "auto",
-        None,
-        &format!("安装 skill {}", item.id),
-        &[dir.clone()],
-    )?;
-    write_skill(&paths::claude_skills_dir(), &item)
+    let mut targets = Vec::new();
+    match target {
+        "claude" => targets.push(paths::claude_skills_dir()),
+        "codex" => targets.push(paths::codex_dir().join("skills")),
+        "both" => {
+            targets.push(paths::claude_skills_dir());
+            targets.push(paths::codex_dir().join("skills"));
+        }
+        other => return Err(format!("未知 skill 目标: {}", other)),
+    }
+    for dir in &targets {
+        snapshots::create(
+            data_dir,
+            "skills",
+            "auto",
+            None,
+            &format!("安装 skill {} -> {}", item.id, target),
+            &[dir.join(&item.id)],
+        )?;
+        write_skill(dir, &item)?;
+    }
+    Ok(())
 }
 
 /// 安装 skill 到指定 skills 目录(供工作区隔离物化复用,不快照)。
@@ -109,17 +131,32 @@ pub fn install_skill_into(skills_dir: &Path, id: &str, data_dir: &Path) -> Resul
 }
 
 pub fn remove_skill(data_dir: &Path, id: &str) -> Result<(), String> {
-    let dir = skill_dir(id);
-    snapshots::create(
-        data_dir,
-        "skills",
-        "auto",
-        None,
-        &format!("移除 skill {}", id),
-        &[dir.clone()],
-    )?;
-    if dir.exists() {
-        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+    remove_skill_for(data_dir, id, "both")
+}
+
+pub fn remove_skill_for(data_dir: &Path, id: &str, target: &str) -> Result<(), String> {
+    let mut dirs = Vec::new();
+    match target {
+        "claude" => dirs.push(skill_dir(id)),
+        "codex" => dirs.push(paths::codex_dir().join("skills").join(id)),
+        "both" => {
+            dirs.push(skill_dir(id));
+            dirs.push(paths::codex_dir().join("skills").join(id));
+        }
+        other => return Err(format!("未知 skill 目标: {}", other)),
+    }
+    for dir in dirs {
+        snapshots::create(
+            data_dir,
+            "skills",
+            "auto",
+            None,
+            &format!("移除 skill {} -> {}", id, target),
+            &[dir.clone()],
+        )?;
+        if dir.exists() {
+            std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+        }
     }
     Ok(())
 }
