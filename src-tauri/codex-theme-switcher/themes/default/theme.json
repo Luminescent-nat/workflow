@@ -1,0 +1,12 @@
+{
+  "id": "default",
+  "name": "Codex 默认",
+  "description": "恢复 Codex 官方默认外观，移除所有自定义皮肤效果。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#6366f1",
+    "surface": "#f4f6f8",
+    "ink": "#334155"
+  }
+}

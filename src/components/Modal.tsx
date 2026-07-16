@@ -6,26 +6,34 @@ interface Props {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
-export default function Modal({ open, title, onClose, children }: Props) {
+const sizeMap = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+};
+
+export default function Modal({ open, title, onClose, children, size = "md" }: Props) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl bg-white shadow-xl"
+        className={`w-full ${sizeMap[size]} rounded-xl bg-white shadow-2xl shadow-slate-900/15 animate-scale-in overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+        <div className="flex items-center justify-between border-b border-[var(--brand-100)] px-5 py-3.5">
+          <h3 className="text-sm font-semibold text-[var(--brand-900)]">{title}</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 transition-colors hover:text-slate-600"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--brand-400)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-700)]"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
         <div className="p-5">{children}</div>

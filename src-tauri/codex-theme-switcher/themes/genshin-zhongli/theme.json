@@ -1,0 +1,32 @@
+{
+  "id": "genshin-zhongli",
+  "name": "原神 · 钟离",
+  "description": "岩壑千重，琥珀鎏金。以钟离为灵感的岩褐贵气主题。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#d97706",
+    "surface": "#fffbeb",
+    "ink": "#451a03"
+  },
+  "desktop": {
+    "appearanceTheme": "light",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#d97706",
+      "contrast": 64,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#451a03",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#fbbf24",
+        "diffRemoved": "#e29944",
+        "skill": "#b45309"
+      },
+      "surface": "#fffbeb"
+    }
+  }
+}

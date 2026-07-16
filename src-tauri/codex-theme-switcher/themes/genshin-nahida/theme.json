@@ -1,0 +1,32 @@
+{
+  "id": "genshin-nahida",
+  "name": "原神 · 纳西妲",
+  "description": "草木生灵，智慧之光。以纳西妲为灵感的清新草绿主题。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#22c55e",
+    "surface": "#f0fdf4",
+    "ink": "#14532d"
+  },
+  "desktop": {
+    "appearanceTheme": "light",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#22c55e",
+      "contrast": 64,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#14532d",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#86efac",
+        "diffRemoved": "#59d386",
+        "skill": "#4ade80"
+      },
+      "surface": "#f0fdf4"
+    }
+  }
+}

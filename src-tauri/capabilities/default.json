@@ -7,6 +7,16 @@
     "core:default",
     "opener:default",
     "shell:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "node",
+          "cmd": "node",
+          "args": true
+        }
+      ]
+    },
     "dialog:default",
     "fs:default"
   ]

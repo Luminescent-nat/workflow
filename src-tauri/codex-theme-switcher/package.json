@@ -1,0 +1,30 @@
+{
+  "name": "codex-theme-switcher",
+  "version": "1.0.0",
+  "description": "One-click theme switcher for the OpenAI Codex desktop app with Genshin Impact character skins.",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "codex-theme": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "dev": "npx tsc --watch",
+    "start": "node dist/cli.js",
+    "apply": "node dist/cli.js apply",
+    "remove": "node dist/cli.js remove",
+    "list": "node dist/cli.js list"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

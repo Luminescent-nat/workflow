@@ -1,0 +1,32 @@
+{
+  "id": "genshin-hutao",
+  "name": "原神 · 胡桃",
+  "description": "赤蝶翩跹，幽火明灭。以胡桃为灵感的赤红蝶影主题。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#dc2626",
+    "surface": "#fef2f2",
+    "ink": "#450a0a"
+  },
+  "desktop": {
+    "appearanceTheme": "light",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#dc2626",
+      "contrast": 64,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#450a0a",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#f87171",
+        "diffRemoved": "#e45c5c",
+        "skill": "#b91c1c"
+      },
+      "surface": "#fef2f2"
+    }
+  }
+}

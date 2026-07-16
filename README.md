@@ -17,6 +17,7 @@ Current release: **v1.0.0 MVP**
 - **Workspaces**: isolate Claude and Codex configuration per project with separate providers, Skills, roles, and launch targets.
 - **Conversation management**: browse global or workspace conversation history, auto-preview selected conversations, export Markdown, and delete sessions with snapshot backup.
 - **Snapshots**: restore previous provider, Skill, MCP, role, and workspace configuration states.
+- **Codex theme switcher**: one-click apply/restore visual skins for the OpenAI Codex desktop app, including Genshin Impact character themes.
 - **Languages**: switch the interface between English, Japanese, Simplified Chinese, and Traditional Chinese.
 
 ## Requirements
@@ -42,6 +43,15 @@ For source-based use, install the prerequisites above, install dependencies, and
 4. Open **Role Workflows** and apply a workflow pack to Claude, Codex, or both.
 5. Open **Workspaces**, create a project workspace, choose providers and optional roles/Skills, then launch Claude or Codex.
 6. Open **Conversation Records** inside Workspaces to preview, export, or delete conversation history.
+7. Open **Themes**, select a Codex visual skin, and choose **Apply Theme**. Use **Restore Default** to remove the skin and recover the backed-up configuration.
+
+## Codex Themes
+
+The Themes page applies visual skins to the Codex desktop application. It starts Codex with Chromium remote debugging enabled and injects the selected CSS at runtime; it does not alter the Codex installation directory.
+
+Before applying a theme, ensure the Codex desktop application is installed and Node.js is available on `PATH`. The first application creates a backup of `~/.codex/config.toml`. Restoring the default theme removes the injected styling, stops the theme helper, and restores that backup when present.
+
+The included themes are visual adaptations only. They are unrelated to Codex models, API providers, or workspace configuration. For standalone CLI use and theme authoring, see `src-tauri/codex-theme-switcher/README.md`.
 
 ## Configuration
 

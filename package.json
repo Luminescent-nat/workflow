@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:themes && tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:themes": "node src-tauri/codex-theme-switcher/node_modules/typescript/bin/tsc -p src-tauri/codex-theme-switcher/tsconfig.json",
+    "postinstall": "node -e \"require('node:child_process').execFileSync(process.execPath, [process.env.npm_execpath, '--prefix', 'src-tauri/codex-theme-switcher', 'install'], { stdio: 'inherit' })\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.1",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-shell": "^2.3.5",
     "clsx": "^2.1.1",
     "lucide-react": "^1.21.0",
     "react": "^19.1.0",

@@ -1,7 +1,52 @@
 @import "tailwindcss";
 
+/*
+ * Design System
+ * 统一色彩、间距、圆角、阴影，确保全局一致性
+ */
+
 :root {
   color-scheme: light;
+
+  /* Brand — 柔和的灰蓝色系，降低视觉疲劳 */
+  --brand-900: #1e293b;
+  --brand-800: #334155;
+  --brand-700: #475569;
+  --brand-600: #64748b;
+  --brand-500: #7c8a9a;
+  --brand-400: #9aa5b1;
+  --brand-300: #c4ccd5;
+  --brand-200: #dde2e8;
+  --brand-100: #eef1f4;
+  --brand-50: #f4f6f8;
+
+  /* Accent — 靛蓝色，用于主操作和高亮 */
+  --accent-700: #3730a3;
+  --accent-600: #4f46e5;
+  --accent-500: #6366f1;
+  --accent-100: #e0e7ff;
+  --accent-50: #eef2ff;
+
+  --success-600: #059669;
+  --success-500: #10b981;
+  --success-100: #d1fae5;
+
+  --warning-600: #d97706;
+  --warning-500: #f59e0b;
+  --warning-100: #fef3c7;
+
+  --danger-600: #dc2626;
+  --danger-500: #ef4444;
+  --danger-100: #fee2e2;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(15 23 42 / 0.05), 0 1px 2px -1px rgb(15 23 42 / 0.03);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.05), 0 2px 4px -2px rgb(15 23 42 / 0.03);
 }
 
 html,
@@ -13,7 +58,120 @@ body,
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Microsoft YaHei",
+    "PingFang SC", "Noto Sans SC", sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--brand-50);
+  color: var(--brand-800);
+  font-size: 14px;
+  line-height: 1.6;
 }
+
+/* Scrollbar — 细腻不抢眼 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--brand-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-400);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+.animate-scale-in { animation: scaleIn 0.15s ease-out forwards; }
+
+/* Card — 统一卡片样式 */
+.surface-card {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--brand-200);
+  background: white;
+  box-shadow: var(--shadow-xs);
+}
+.surface-card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.surface-card-hover:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--brand-300);
+}
+
+/* Focus ring */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+
+/* Input — 统一表单输入 */
+.form-input {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--brand-200);
+  background: var(--brand-50);
+  padding: 0.5rem 0.75rem;
+  font-size: 13px;
+  color: var(--brand-800);
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-input::placeholder { color: var(--brand-400); }
+.form-input:focus {
+  border-color: var(--accent-500);
+  background: white;
+  box-shadow: 0 0 0 3px var(--accent-50);
+}
+.form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Section divider */
+.section-divider {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--brand-200), transparent);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--brand-300);
+  background: white;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--brand-400);
+  font-size: 13px;
+}
+
+/* Status pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.pill-success { background: var(--success-100); color: var(--success-600); }
+.pill-info { background: var(--accent-100); color: var(--accent-700); }
+.pill-warning { background: var(--warning-100); color: var(--warning-600); }
+.pill-danger { background: var(--danger-100); color: var(--danger-600); }
+.pill-muted { background: var(--brand-100); color: var(--brand-600); }

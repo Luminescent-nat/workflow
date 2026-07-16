@@ -1,0 +1,32 @@
+{
+  "id": "genshin-raiden",
+  "name": "原神 · 雷电将军",
+  "description": "紫电威严，樱落无声。以雷电将军为灵感的深紫电光主题。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#a855f7",
+    "surface": "#faf5ff",
+    "ink": "#2e1065"
+  },
+  "desktop": {
+    "appearanceTheme": "light",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#a855f7",
+      "contrast": 64,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#2e1065",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#d8b4fe",
+        "diffRemoved": "#bd7ff9",
+        "skill": "#9333ea"
+      },
+      "surface": "#faf5ff"
+    }
+  }
+}

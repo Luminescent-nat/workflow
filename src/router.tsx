@@ -6,6 +6,7 @@ import Market from "@/pages/Market";
 import Roles from "@/pages/Roles";
 import Workspaces from "@/pages/Workspaces";
 import Settings from "@/pages/Settings";
+import Themes from "@/pages/Themes";
 
 export const router = createHashRouter([
   {
@@ -17,6 +18,7 @@ export const router = createHashRouter([
       { path: "market", element: <Market /> },
       { path: "roles", element: <Roles /> },
       { path: "workspaces", element: <Workspaces /> },
+      { path: "themes", element: <Themes /> },
       { path: "settings", element: <Settings /> },
     ],
   },

@@ -1,0 +1,32 @@
+{
+  "id": "genshin-furina",
+  "name": "原神 · 芙宁娜",
+  "description": "水色舞台，华丽登场。以芙宁娜为灵感的海蓝白金主题。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#0ea5e9",
+    "surface": "#f0f9ff",
+    "ink": "#0c4a6e"
+  },
+  "desktop": {
+    "appearanceTheme": "light",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#0ea5e9",
+      "contrast": 64,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#0c4a6e",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#7dd3fc",
+        "diffRemoved": "#4abbee",
+        "skill": "#38bdf8"
+      },
+      "surface": "#f0f9ff"
+    }
+  }
+}
