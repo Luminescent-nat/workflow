@@ -17,58 +17,66 @@ pub fn winget_path() -> String {
     "winget".to_string()
 }
 
-fn winget_install(id: &str) -> CmdOutput {
-    util::run(
-        &winget_path(),
-        &[
-            "install",
-            "-e",
-            "--id",
-            id,
-            "--accept-source-agreements",
-            "--accept-package-agreements",
-            "--disable-interactivity",
-        ],
-    )
+fn winget_install(id: &str, source: Option<&str>) -> CmdOutput {
+    let mut args = vec![
+        "install",
+        "-e",
+        "--id",
+        id,
+        "--accept-source-agreements",
+        "--accept-package-agreements",
+        "--disable-interactivity",
+    ];
+    if let Some(source) = source {
+        args.push("--source");
+        args.push(source);
+    }
+    util::run(&winget_path(), &args)
 }
 
-fn winget_uninstall(id: &str) -> CmdOutput {
-    util::run(
-        &winget_path(),
-        &[
-            "uninstall",
-            "-e",
-            "--id",
-            id,
-            "--accept-source-agreements",
-            "--disable-interactivity",
-        ],
-    )
+fn winget_uninstall(id: &str, source: Option<&str>) -> CmdOutput {
+    let mut args = vec![
+        "uninstall",
+        "-e",
+        "--id",
+        id,
+        "--accept-source-agreements",
+        "--disable-interactivity",
+    ];
+    if let Some(source) = source {
+        args.push("--source");
+        args.push(source);
+    }
+    util::run(&winget_path(), &args)
 }
 
-fn winget_upgrade(id: &str) -> CmdOutput {
-    util::run(
-        &winget_path(),
-        &[
-            "upgrade",
-            "-e",
-            "--id",
-            id,
-            "--accept-source-agreements",
-            "--accept-package-agreements",
-            "--disable-interactivity",
-        ],
-    )
+fn winget_upgrade(id: &str, source: Option<&str>) -> CmdOutput {
+    let mut args = vec![
+        "upgrade",
+        "-e",
+        "--id",
+        id,
+        "--accept-source-agreements",
+        "--accept-package-agreements",
+        "--disable-interactivity",
+    ];
+    if let Some(source) = source {
+        args.push("--source");
+        args.push(source);
+    }
+    util::run(&winget_path(), &args)
 }
 
-/// 安装目标 key → winget 包 ID。None 表示无对应可安装包(如 codex 桌面版)。
-pub fn target_id(target: &str) -> Option<&'static str> {
+/// 安装目标 key → (winget 包 ID, 可选 winget source)。None 表示无对应可安装包。
+/// 注:winget 的 OpenAI.Codex 是 CLI;Codex 桌面版是商店应用,按 ProductId 走 msstore 源。
+pub fn target_id(target: &str) -> Option<(&'static str, Option<&'static str>)> {
     match target {
-        "node" => Some("OpenJS.NodeJS.LTS"),
-        "git" => Some("Git.Git"),
-        "claude_cli" => Some("Anthropic.ClaudeCode"),
-        "codex_cli" => Some("OpenAI.Codex"),
-        "claude_desktop" => Some("Anthropic.Claude"),
+        "node" => Some(("OpenJS.NodeJS.LTS", None)),
+        "git" => Some(("Git.Git", None)),
+        "claude_cli" => Some(("Anthropic.ClaudeCode", None)),
+        "codex_cli" => Some(("OpenAI.Codex", None)),
+        "claude_desktop" => Some(("Anthropic.Claude", None)),
+        "codex_desktop" => Some(("9PLM9XGG6VKS", Some("msstore"))),
         _ => None,
     }
 }
@@ -84,21 +92,21 @@ fn unknown(target: &str) -> CmdOutput {
 
 pub fn install(target: &str) -> CmdOutput {
     match target_id(target) {
-        Some(id) => winget_install(id),
+        Some((id, source)) => winget_install(id, source),
         None => unknown(target),
     }
 }
 
 pub fn uninstall(target: &str) -> CmdOutput {
     match target_id(target) {
-        Some(id) => winget_uninstall(id),
+        Some((id, source)) => winget_uninstall(id, source),
         None => unknown(target),
     }
 }
 
 pub fn update(target: &str) -> CmdOutput {
     match target_id(target) {
-        Some(id) => winget_upgrade(id),
+        Some((id, source)) => winget_upgrade(id, source),
         None => unknown(target),
     }
 }

@@ -1,0 +1,316 @@
+/* Midnight Pro — hand-crafted minimal dark theme (not generated).
+   Focus: neutral low-luminance surfaces, clear text hierarchy, one quiet accent. */
+:root.codex-theme-{{id}} {
+  color-scheme: dark !important;
+
+  /* palette */
+  --theme-ink: #e6edf3;
+  --theme-primary: #6e8bff;
+  --theme-secondary: #8b949e;
+  --theme-surface: #0d1117;
+  --theme-light: #161b22;
+  --theme-dark: #010409;
+  --theme-accent: #6e8bff;
+  --theme-glow: #388bfd;
+
+  /* derived surfaces & text */
+  --theme-panel: #0d1117;
+  --theme-card: #161b22;
+  --theme-raised: #1c2129;
+  --theme-muted: #8b949e;
+  --theme-hover: #21262d;
+
+  /* lines */
+  --theme-line: #262d36;
+  --theme-line-strong: #353d47;
+
+  /* radius scale */
+  --theme-radius-sm: 6px;
+  --theme-radius-md: 8px;
+  --theme-radius-lg: 12px;
+  --theme-radius-xl: 16px;
+
+  /* spacing scale */
+  --theme-space-1: 4px;
+  --theme-space-2: 8px;
+  --theme-space-3: 12px;
+  --theme-space-4: 16px;
+
+  /* elevation: dark themes rely on borders, shadows stay subtle */
+  --theme-shadow-sm: 0 1px 2px rgba(1, 4, 9, .5);
+  --theme-shadow-md: 0 8px 24px -8px rgba(1, 4, 9, .6);
+  --theme-shadow-lg: 0 16px 40px -12px rgba(1, 4, 9, .7);
+
+  --theme-art-position: right 50%;
+}
+
+html.codex-theme-{{id}} body {
+  background:
+    radial-gradient(90% 60% at 85% -10%, rgba(110, 139, 255, .07), transparent 55%),
+    var(--theme-surface) !important;
+  color: var(--theme-ink) !important;
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+html.codex-theme-{{id}} body::before {
+  content: none;
+}
+
+/* selection / focus / scrollbar */
+html.codex-theme-{{id}} ::selection {
+  background: rgba(110, 139, 255, .32);
+  color: #ffffff;
+}
+
+html.codex-theme-{{id}} :focus-visible {
+  outline: 2px solid rgba(110, 139, 255, .6);
+  outline-offset: 2px;
+}
+
+html.codex-theme-{{id}} *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+html.codex-theme-{{id}} *::-webkit-scrollbar-track {
+  background: transparent;
+}
+html.codex-theme-{{id}} *::-webkit-scrollbar-thumb {
+  background: #2d333b;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+html.codex-theme-{{id}} *::-webkit-scrollbar-thumb:hover {
+  background: #444c56;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+/* sidebar */
+html.codex-theme-{{id}} aside.app-shell-left-panel {
+  background: var(--theme-panel) !important;
+  border-right: 1px solid var(--theme-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  color: var(--theme-ink) !important;
+}
+
+html.codex-theme-{{id}} aside.app-shell-left-panel nav {
+  background: transparent !important;
+}
+
+html.codex-theme-{{id}} aside.app-shell-left-panel button {
+  color: var(--theme-ink) !important;
+  border-radius: var(--theme-radius-md) !important;
+  transition: background .14s ease !important;
+}
+
+html.codex-theme-{{id}} aside.app-shell-left-panel button:hover {
+  background: var(--theme-hover) !important;
+}
+
+html.codex-theme-{{id}} aside.app-shell-left-panel button[aria-label^="切换模式"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--theme-muted) !important;
+}
+
+html.codex-theme-{{id}} aside.app-shell-left-panel [class~="bg-token-list-hover-background"],
+html.codex-theme-{{id}} aside.app-shell-left-panel [aria-current="page"] {
+  background: rgba(110, 139, 255, .12) !important;
+  border: 1px solid rgba(110, 139, 255, .28) !important;
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: inset 2px 0 0 var(--theme-primary) !important;
+}
+
+/* main surface */
+html.codex-theme-{{id}} main.main-surface {
+  background: var(--theme-surface) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+html.codex-theme-{{id}} main.main-surface > header.app-header-tint {
+  background: var(--theme-panel) !important;
+  border-bottom: 1px solid var(--theme-line) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-theme-{{id}} [role="main"] {
+  background: transparent !important;
+  scrollbar-color: #2d333b transparent;
+}
+
+/* home hero: keep the app's layout, only quiet the container */
+html.codex-theme-{{id}} .theme-home {
+  overflow-x: hidden !important;
+}
+
+.theme-home > div:first-child > div:first-child > div:first-child {
+  border: 1px solid var(--theme-line) !important;
+  border-radius: var(--theme-radius-lg) !important;
+  background:
+    radial-gradient(80% 120% at 90% 0%, rgba(110, 139, 255, .10), transparent 60%),
+    linear-gradient(160deg, var(--theme-card), var(--theme-surface)) !important;
+  box-shadow: var(--theme-shadow-md) !important;
+}
+
+.theme-home [data-feature="game-source"] {
+  color: var(--theme-ink) !important;
+  font-weight: 680 !important;
+  letter-spacing: .01em !important;
+  text-shadow: none !important;
+}
+
+.theme-home [data-feature="game-source"] button {
+  border: 1px solid var(--theme-line-strong);
+  border-radius: 999px;
+  background: var(--theme-raised);
+  color: var(--theme-ink) !important;
+  text-decoration-color: var(--theme-muted) !important;
+}
+
+/* suggestion cards */
+.theme-home [class*="group/home-suggestions"] button {
+  border: 1px solid var(--theme-line) !important;
+  border-radius: var(--theme-radius-lg) !important;
+  background: var(--theme-card) !important;
+  color: var(--theme-ink) !important;
+  box-shadow: none !important;
+  transform: translateY(0);
+  transition: background .14s ease, border-color .14s ease !important;
+}
+
+.theme-home [class*="group/home-suggestions"] button:hover {
+  background: var(--theme-raised) !important;
+  border-color: var(--theme-line-strong) !important;
+}
+
+.theme-home [class*="group/home-suggestions"] button svg {
+  color: var(--theme-primary) !important;
+}
+
+/* composer */
+html.codex-theme-{{id}} .composer-surface-chrome {
+  border: 1px solid var(--theme-line-strong) !important;
+  border-radius: var(--theme-radius-lg) !important;
+  background: var(--theme-card) !important;
+  box-shadow: var(--theme-shadow-md) !important;
+  backdrop-filter: none !important;
+}
+
+html.codex-theme-{{id}} .composer-surface-chrome:focus-within {
+  border-color: rgba(110, 139, 255, .55) !important;
+  box-shadow: 0 0 0 3px rgba(110, 139, 255, .15), var(--theme-shadow-md) !important;
+}
+
+/* project selector */
+.theme-home .theme-project-selector-shell {
+  border: 1px solid var(--theme-line);
+  border-bottom: 0;
+  border-radius: var(--theme-radius-lg) var(--theme-radius-lg) 0 0;
+  background: var(--theme-panel) !important;
+}
+
+.theme-home [class*="group/project-selector"] > button {
+  border-color: var(--theme-line) !important;
+  border-radius: var(--theme-radius-md) !important;
+  background: var(--theme-card) !important;
+  color: var(--theme-ink) !important;
+  box-shadow: none !important;
+}
+
+/* inputs & messages */
+html.codex-theme-{{id}} .ProseMirror {
+  color: var(--theme-ink) !important;
+  caret-color: var(--theme-primary) !important;
+}
+
+html.codex-theme-{{id}} button[class~="bg-token-foreground"] {
+  background: var(--theme-primary) !important;
+  color: #ffffff !important;
+  border-radius: var(--theme-radius-md) !important;
+  box-shadow: none !important;
+}
+
+html.codex-theme-{{id}} button[class~="bg-token-foreground"]:hover {
+  background: #86a0ff !important;
+}
+
+html.codex-theme-{{id}} article,
+html.codex-theme-{{id}} [data-message-author-role] {
+  border-radius: var(--theme-radius-lg);
+}
+
+/* preview mock selectors: hero, suggestion cards, chat bubbles */
+html.codex-theme-{{id}} section[data-feature="game-source"] {
+  position: relative;
+  padding: 24px 28px;
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-radius-lg);
+  background:
+    radial-gradient(80% 120% at 90% 0%, rgba(110, 139, 255, .08), transparent 60%),
+    linear-gradient(160deg, var(--theme-card), var(--theme-surface));
+  box-shadow: var(--theme-shadow-md);
+}
+
+html.codex-theme-{{id}} section[data-feature="game-source"] h1 {
+  margin: 0;
+  max-width: 62%;
+  color: var(--theme-ink);
+  font-size: clamp(20px, 2.2vw, 30px);
+  line-height: 1.3;
+  font-weight: 680;
+  letter-spacing: .01em;
+  text-shadow: 0 0 18px rgba(110, 139, 255, .32);
+}
+
+html.codex-theme-{{id}} section[data-feature="game-source"] p {
+  margin: 10px 0 0;
+  max-width: 62%;
+  color: var(--theme-muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+html.codex-theme-{{id}} .suggestion-card {
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-radius-lg);
+  background: var(--theme-card);
+  color: var(--theme-ink);
+  box-shadow: none;
+  transform: translateY(0);
+  transition: transform .14s ease, background .14s ease, border-color .14s ease;
+}
+
+html.codex-theme-{{id}} .suggestion-card:hover {
+  transform: translateY(-2px);
+  background: var(--theme-raised);
+  border-color: var(--theme-line-strong);
+}
+
+html.codex-theme-{{id}} .message.user {
+  width: 85%;
+  margin-left: auto;
+  background: rgba(110, 139, 255, .13);
+  color: var(--theme-ink);
+  border: 1px solid rgba(110, 139, 255, .26);
+  border-radius: var(--theme-radius-lg);
+}
+
+html.codex-theme-{{id}} .message.assistant {
+  background: var(--theme-card);
+  color: var(--theme-ink);
+  border: 1px solid var(--theme-line);
+  border-radius: var(--theme-radius-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.codex-theme-{{id}} * {
+    transition: none !important;
+  }
+}

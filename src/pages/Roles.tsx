@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Trash2, Copy, Users, Terminal, Shield, BookOpen, Command } from "lucide-react";
+import { CheckCircle2, ChevronDown, Download, Trash2, Copy, ListOrdered, Users, Terminal, Shield, BookOpen, Command } from "lucide-react";
 import clsx from "clsx";
 import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import { ipc, type RolePack } from "@/ipc";
+import { categoryLabel, sortedCategories } from "@/roleCategories";
 import { useI18n } from "@/i18n";
 
 type Msg = { ok: boolean; text: string } | null;
@@ -61,6 +62,8 @@ function RoleDetails({ pack, busy, onApply, onRemove }: {
 }) {
   const { t } = useI18n();
   const local = (key: string, fallback: string) => { const v = t(key); return v === key ? fallback : v; };
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const toggleExpanded = (key: string) => setExpanded((cur) => (cur === key ? null : key));
   if (!pack) {
     return (
       <div className="empty-state">
@@ -113,18 +116,53 @@ function RoleDetails({ pack, busy, onApply, onRemove }: {
         ))}
       </div>
 
+      {pack.steps.length > 0 && (
+        <section className="border-b border-[var(--brand-100)] p-5">
+          <h3 className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-400)]">
+            <ListOrdered size={11} /> {local("roles.steps", "工作流步骤")}
+          </h3>
+          <ol className="space-y-2.5">
+            {pack.steps.map((s, i) => (
+              <li key={`${i}-${s.name}`} className="flex items-start gap-2.5">
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-100)] text-[10px] font-bold text-[var(--accent-700)]">
+                  {i + 1}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs font-semibold text-[var(--brand-800)]">{s.name}</span>
+                    {s.command && (
+                      <span className="rounded-md bg-[var(--accent-50)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--accent-700)]">/{s.command}</span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-[11px] leading-4 text-[var(--brand-500)]">{s.description}</div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       <div className="grid gap-4 p-5 xl:grid-cols-2">
         <section className="min-w-0">
           <h3 className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-400)]">
             <Users size={11} /> Agents
           </h3>
           <div className="space-y-1.5">
-            {pack.agents.map((a) => (
-              <div key={a.name} className="flex items-center gap-2 rounded-lg bg-[var(--brand-50)] px-3 py-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                <div className="break-all font-mono text-xs font-semibold text-[var(--brand-700)]">{a.name}</div>
-              </div>
-            ))}
+            {pack.agents.map((a) => {
+              const open = expanded === `agent:${a.name}`;
+              return (
+                <div key={a.name} className="rounded-lg bg-[var(--brand-50)]">
+                  <button type="button" onClick={() => toggleExpanded(`agent:${a.name}`)} className="flex w-full items-center gap-2 px-3 py-2 text-left">
+                    <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                    <div className="break-all font-mono text-xs font-semibold text-[var(--brand-700)]">{a.name}</div>
+                    <ChevronDown size={12} className={clsx("ml-auto shrink-0 text-[var(--brand-400)] transition-transform", open && "rotate-180")} />
+                  </button>
+                  {open && (
+                    <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words px-3 pb-2.5 text-[11px] leading-4 text-[var(--brand-500)]">{a.content}</pre>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -136,12 +174,21 @@ function RoleDetails({ pack, busy, onApply, onRemove }: {
             <div className="rounded-lg border border-dashed border-[var(--brand-200)] p-4 text-xs text-[var(--brand-400)]">{t("roles.noCommands")}</div>
           ) : (
             <div className="space-y-1.5">
-              {pack.commands.map((c) => (
-                <div key={c.name} className="flex items-center gap-2 rounded-lg bg-[var(--accent-50)] px-3 py-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[var(--accent-500)]" />
-                  <div className="break-all font-mono text-xs font-semibold text-[var(--accent-700)]">/{c.name}</div>
-                </div>
-              ))}
+              {pack.commands.map((c) => {
+                const open = expanded === `command:${c.name}`;
+                return (
+                  <div key={c.name} className="rounded-lg bg-[var(--accent-50)]">
+                    <button type="button" onClick={() => toggleExpanded(`command:${c.name}`)} className="flex w-full items-center gap-2 px-3 py-2 text-left">
+                      <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent-500)]" />
+                      <div className="break-all font-mono text-xs font-semibold text-[var(--accent-700)]">/{c.name}</div>
+                      <ChevronDown size={12} className={clsx("ml-auto shrink-0 text-[var(--accent-400)] transition-transform", open && "rotate-180")} />
+                    </button>
+                    {open && (
+                      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words px-3 pb-2.5 text-[11px] leading-4 text-[var(--accent-700)]">{c.content}</pre>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
@@ -182,6 +229,10 @@ export default function Roles() {
   const installers = data?.installers ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedPack = packs.find((p) => p.id === selectedId) ?? packs[0] ?? null;
+  const packsByCategory = sortedCategories(packs.map((p) => p.category)).map((cat) => ({
+    cat,
+    packs: packs.filter((p) => p.category === cat),
+  }));
 
   return (
     <>
@@ -204,13 +255,24 @@ export default function Roles() {
                   <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-400)]">{t("roles.customPacks")}</h2>
                   <div className="section-divider" />
                 </div>
-                <div className="space-y-2">
-                  {packs.map((p) => (
-                    <RoleListItem key={p.id} pack={p} selected={selectedPack?.id === p.id} onSelect={() => setSelectedId(p.id)} />
+                <div className="space-y-4">
+                  {packsByCategory.map((group) => (
+                    <div key={group.cat}>
+                      <div className="mb-1.5 flex items-center gap-2">
+                        <h3 className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-400)]">{categoryLabel(local, group.cat)}</h3>
+                        <div className="section-divider" />
+                      </div>
+                      <div className="space-y-2">
+                        {group.packs.map((p) => (
+                          <RoleListItem key={p.id} pack={p} selected={selectedPack?.id === p.id} onSelect={() => setSelectedId(p.id)} />
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </aside>
               <RoleDetails
+                key={selectedPack?.id ?? "empty"}
                 pack={selectedPack}
                 busy={busy}
                 onApply={(target) => { if (!selectedPack) return; setMsg(null); apply.mutate({ id: selectedPack.id, target }); }}

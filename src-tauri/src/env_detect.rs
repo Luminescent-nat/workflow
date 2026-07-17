@@ -143,13 +143,34 @@ fn winget_show_version(id: &str) -> Option<String> {
     None
 }
 
+/// 通过 Get-AppxPackage 取商店应用(如 Codex 桌面版)的版本;未安装或失败返回 None。
+/// 桌面版已更名 ChatGPT,包名新旧两种都试。
+fn appx_version(packages: &[&str]) -> Option<String> {
+    for package in packages {
+        let script = format!(
+            "(Get-AppxPackage {} | Sort-Object Version -Descending | Select-Object -First 1).Version",
+            package
+        );
+        let version = first_line(&util::run(
+            &util::powershell_exe(),
+            &["-NoProfile", "-Command", script.as_str()],
+        ));
+        if version.is_some() {
+            return version;
+        }
+    }
+    None
+}
+
 fn available_versions(targets: &[&str]) -> BTreeMap<String, Option<String>> {
     let mut out = BTreeMap::new();
     for target in targets {
         if out.contains_key(*target) {
             continue;
         }
-        let version = installer::target_id(target).and_then(winget_show_version);
+        let version = installer::target_id(target)
+            .map(|(id, _)| id)
+            .and_then(winget_show_version);
         out.insert((*target).to_string(), version);
     }
     out
@@ -237,8 +258,18 @@ pub fn detect_all() -> Vec<ToolStatus> {
         install_target: Some("claude_desktop".into()),
     });
 
-    // 注:OpenAI 不提供独立的 Codex 桌面 exe,Codex 以 CLI(上方已检测)与 IDE 扩展形式提供。
-    // 故不再列"Codex 桌面版"伪条目,避免把已装好的 Codex 误显示为"环境缺失"。
+    let codex_desktop = appx_version(&["OpenAI.Codex", "OpenAI.ChatGPT-Desktop"]);
+    list.push(ToolStatus {
+        key: "codex_desktop".into(),
+        name: "Codex 桌面版(ChatGPT)".into(),
+        category: "desktop".into(),
+        installed: codex_desktop.is_some(),
+        version: codex_desktop,
+        // 商店版由商店自更新,不查 available_version,UI 不显示更新按钮
+        available_version: None,
+        note: None,
+        install_target: Some("codex_desktop".into()),
+    });
 
     list
 }

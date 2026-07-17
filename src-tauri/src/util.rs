@@ -103,6 +103,24 @@ pub fn refresh_process_path() {
     }
 }
 
+/// PowerShell 可执行文件路径:优先 SystemRoot 下的绝对路径。
+/// 部分机器 PATH 不含 WindowsPowerShell 目录,裸写 "powershell" 会 ENOENT。
+#[cfg(windows)]
+pub fn powershell_exe() -> String {
+    let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".to_string());
+    let abs = format!(r"{}\System32\WindowsPowerShell\v1.0\powershell.exe", root);
+    if Path::new(&abs).exists() {
+        abs
+    } else {
+        "powershell".to_string()
+    }
+}
+
+#[cfg(not(windows))]
+pub fn powershell_exe() -> String {
+    "powershell".to_string()
+}
+
 pub fn apply_fresh_path(cmd: &mut Command) {
     if let Some(path) = merged_windows_path() {
         cmd.env("PATH", path);

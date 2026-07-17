@@ -6,6 +6,7 @@ import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { ipc, type Workspace, type Provider, type RolePack, type SkillItem, type SessionInfo } from "@/ipc";
+import { categoryLabel, sortedCategories } from "@/roleCategories";
 import { useI18n } from "@/i18n";
 
 type Msg = { ok: boolean; text: string } | null;
@@ -99,7 +100,11 @@ function WorkspaceForm({ draft, providers, roles, skills, submitting, onChange, 
         <span className="mb-1.5 block text-xs font-semibold text-[var(--brand-700)]">{t("workspaces.roleOptional")}</span>
         <select className="form-input" value={draft.role_id ?? ""} onChange={(e) => set({ role_id: e.target.value || null })}>
           <option value="">{t("common.doNotApply")}</option>
-          {roles.map((r) => <option key={r.id} value={r.id}>{local(`catalog.role.${r.id}.name`, r.name)}</option>)}
+          {sortedCategories(roles.map((r) => r.category)).map((cat) => (
+            <optgroup key={cat} label={categoryLabel(local, cat)}>
+              {roles.filter((r) => r.category === cat).map((r) => <option key={r.id} value={r.id}>{local(`catalog.role.${r.id}.name`, r.name)}</option>)}
+            </optgroup>
+          ))}
         </select>
       </label>
       {skills.length > 0 && (

@@ -1,9 +1,16 @@
 import { execFile, spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { waitForTargets } from "./injector.js";
+import { powershellExe } from "./powershell.js";
 
 const execFileAsync = promisify(execFile);
+
+/** 桌面版已更名 ChatGPT:AppxPackage 包名新旧两种都要试。 */
+const PACKAGE_NAMES = ["OpenAI.Codex", "OpenAI.ChatGPT-Desktop"];
+/** 包内可执行文件候选名(更名后可能变化)。 */
+const EXE_NAMES = ["ChatGPT.exe", "Codex.exe"];
 
 export interface LaunchOptions {
   port: number;
@@ -31,15 +38,22 @@ async function testDebugPort(port: number): Promise<boolean> {
 
 async function findCodexExecutable(): Promise<string> {
   try {
-    const { stdout } = await execFileAsync("powershell.exe", [
-      "-NoProfile",
-      "-Command",
-      "(Get-AppxPackage OpenAI.Codex | Sort-Object Version -Descending | Select-Object -First 1).InstallLocation",
-    ]);
-    const installLocation = stdout.trim();
-    if (!installLocation) throw new Error("OpenAI.Codex Store package not found.");
-    const exe = path.join(installLocation, "app", "ChatGPT.exe");
-    return exe;
+    let installLocation = "";
+    for (const packageName of PACKAGE_NAMES) {
+      const { stdout } = await execFileAsync(powershellExe(), [
+        "-NoProfile",
+        "-Command",
+        `(Get-AppxPackage ${packageName} | Sort-Object Version -Descending | Select-Object -First 1).InstallLocation`,
+      ]);
+      installLocation = stdout.trim();
+      if (installLocation) break;
+    }
+    if (!installLocation) throw new Error("Codex(ChatGPT)Store package not found.");
+    for (const exeName of EXE_NAMES) {
+      const exe = path.join(installLocation, "app", exeName);
+      if (fs.existsSync(exe)) return exe;
+    }
+    return path.join(installLocation, "app", EXE_NAMES[0]);
   } catch (error) {
     throw new Error(`Failed to locate Codex executable: ${(error as Error).message}`);
   }
@@ -47,7 +61,7 @@ async function findCodexExecutable(): Promise<string> {
 
 async function findRunningCodexProcesses(): Promise<Array<{ pid: number; mainWindowHandle: number }>> {
   try {
-    const { stdout } = await execFileAsync("powershell.exe", [
+    const { stdout } = await execFileAsync(powershellExe(), [
       "-NoProfile",
       "-Command",
       "Get-Process ChatGPT -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object Id, MainWindowHandle | ConvertTo-Json -Compress",
@@ -73,7 +87,7 @@ async function killCodexProcesses(): Promise<void> {
   }
   await sleep(2600);
   try {
-    await execFileAsync("powershell.exe", [
+    await execFileAsync(powershellExe(), [
       "-NoProfile",
       "-Command",
       "Get-Process ChatGPT -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue",
@@ -134,7 +148,7 @@ export async function ensureCodexRunning(options: LaunchOptions): Promise<Launch
 
     if (spawnError) {
       const psCommand = `Start-Process -FilePath '${exe.replace(/'/g, "''")}' -ArgumentList '${args.map((a) => a.replace(/'/g, "''")).join("','")}' -WindowStyle Normal`;
-      const ps = spawn("powershell.exe", ["-NoProfile", "-Command", psCommand], {
+      const ps = spawn(powershellExe(), ["-NoProfile", "-Command", psCommand], {
         detached: true,
         stdio: "ignore",
         windowsHide: true,

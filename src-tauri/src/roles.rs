@@ -9,7 +9,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::{paths, snapshots, util};
 
-const ROLES_JSON: &str = include_str!("../catalog/roles.json");
+const INSTALLERS_JSON: &str = include_str!("../catalog/roles.json");
+
+/// 自研预设包目录:每包一个 JSON 文件(catalog/roles/<id>.json)。
+/// 新增包时创建对应文件并在下方登记。
+const PACK_SOURCES: &[&str] = &[
+    include_str!("../catalog/roles/architecture-design.json"),
+    include_str!("../catalog/roles/frontend-ui-design.json"),
+    include_str!("../catalog/roles/frontend-dev-flow.json"),
+    include_str!("../catalog/roles/backend-dev-flow.json"),
+    include_str!("../catalog/roles/android-dev.json"),
+    include_str!("../catalog/roles/fullstack-team.json"),
+    include_str!("../catalog/roles/frontend-backend-split.json"),
+    include_str!("../catalog/roles/spec-driven.json"),
+    include_str!("../catalog/roles/test-regression.json"),
+    include_str!("../catalog/roles/code-review.json"),
+    include_str!("../catalog/roles/devops-ci.json"),
+    include_str!("../catalog/roles/video-processing.json"),
+    include_str!("../catalog/roles/doc-reading.json"),
+    include_str!("../catalog/roles/doc-writing.json"),
+    include_str!("../catalog/roles/translation-review.json"),
+];
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TemplateFile {
@@ -17,11 +37,25 @@ pub struct TemplateFile {
     pub content: String,
 }
 
+/// 工作流步骤元数据:把包内命令串成有序流水线,UI 据此展示流程。
+#[derive(Serialize, Deserialize, Clone)]
+pub struct WorkflowStep {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub command: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct RolePack {
     pub id: String,
     pub name: String,
     pub description: String,
+    #[serde(default)]
+    pub category: String,
+    #[serde(default)]
+    pub steps: Vec<WorkflowStep>,
     #[serde(default)]
     pub agents: Vec<TemplateFile>,
     #[serde(default)]
@@ -59,7 +93,13 @@ pub struct RolesView {
 }
 
 fn load() -> RolesCatalog {
-    serde_json::from_str(ROLES_JSON).unwrap_or_default()
+    let mut catalog: RolesCatalog = serde_json::from_str(INSTALLERS_JSON).unwrap_or_default();
+    for src in PACK_SOURCES {
+        if let Ok(pack) = serde_json::from_str::<RolePack>(src) {
+            catalog.packs.push(pack);
+        }
+    }
+    catalog
 }
 
 fn role_base(scope: &str) -> Result<PathBuf, String> {
@@ -255,7 +295,8 @@ mod tests {
     #[test]
     fn catalog_parses() {
         let v = view();
-        assert!(!v.packs.is_empty());
+        assert_eq!(v.packs.len(), PACK_SOURCES.len(), "有预设包解析失败");
         assert!(!v.installers.is_empty());
+        assert!(v.packs.iter().all(|p| !p.category.is_empty()));
     }
 }

@@ -1,0 +1,32 @@
+{
+  "id": "midnight-pro",
+  "name": "Midnight Pro",
+  "description": "极简专业暗色主题：低亮度中性底色、清晰文本层次与克制的靛蓝点缀，为长时间编码优化。",
+  "author": "Codex Theme Switcher",
+  "version": "1.0.0",
+  "preview": {
+    "accent": "#6e8bff",
+    "surface": "#0d1117",
+    "ink": "#e6edf3"
+  },
+  "desktop": {
+    "appearanceTheme": "dark",
+    "appearanceLightCodeThemeId": "codex",
+    "appearanceLightChromeTheme": {
+      "accent": "#6e8bff",
+      "contrast": 72,
+      "fonts": {
+        "code": "Cascadia Code",
+        "ui": "Microsoft YaHei UI"
+      },
+      "ink": "#e6edf3",
+      "opaqueWindows": true,
+      "semanticColors": {
+        "diffAdded": "#3fb950",
+        "diffRemoved": "#f85149",
+        "skill": "#6e8bff"
+      },
+      "surface": "#0d1117"
+    }
+  }
+}

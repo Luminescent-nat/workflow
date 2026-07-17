@@ -74,10 +74,18 @@ export interface TemplateFile {
   content: string;
 }
 
+export interface WorkflowStep {
+  name: string;
+  description: string;
+  command: string | null;
+}
+
 export interface RolePack {
   id: string;
   name: string;
   description: string;
+  category: string;
+  steps: WorkflowStep[];
   agents: TemplateFile[];
   commands: TemplateFile[];
   memory: string | null;

@@ -13,7 +13,9 @@ import {
   Cpu,
   Terminal,
   Zap,
+  ExternalLink,
 } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import clsx from "clsx";
 import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
@@ -97,10 +99,22 @@ function ToolRow({
             </Button>
           </>
         ) : (
-          <Button variant="primary" size="sm" disabled={busy} onClick={() => onAction("install")}>
-            {isPending ? <Loader2 className="animate-spin" size={13} /> : <Download size={13} />}
-            {tr("common.install")}
-          </Button>
+          <>
+            <Button variant="primary" size="sm" disabled={busy} onClick={() => onAction("install")}>
+              {isPending ? <Loader2 className="animate-spin" size={13} /> : <Download size={13} />}
+              {tr("common.install")}
+            </Button>
+            {t.key === "codex_desktop" && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => void openUrl("ms-windows-store://pdp/?ProductId=9PLM9XGG6VKS")}
+              >
+                <ExternalLink size={13} />
+                {local("env.openStorePage", "打开商店页面")}
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>

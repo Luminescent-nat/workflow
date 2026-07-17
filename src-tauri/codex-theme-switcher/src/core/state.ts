@@ -4,6 +4,7 @@ import os from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { ThemeState } from "./types.js";
+import { powershellExe } from "./powershell.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -56,7 +57,7 @@ async function stopOrphanDaemons(): Promise<void> {
   } catch {}
   const script = `$selfPid = ${process.pid}; Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.ProcessId -ne $selfPid -and $_.CommandLine -match 'cli\\.js"?\\s+daemon\\s+genshin-' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
   try {
-    await execFileAsync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+    await execFileAsync(powershellExe(), ["-NoProfile", "-NonInteractive", "-Command", script], {
       windowsHide: true,
     });
     await fs.mkdir(STATE_DIR, { recursive: true });

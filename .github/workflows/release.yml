@@ -91,6 +91,6 @@ jobs:
           args: ${{ matrix.args }}
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: "Auto flows ${{ env.RELEASE_TAG }}"
-          releaseBody: "Auto flows MVP release. Includes Windows, Linux, and macOS installers."
+          releaseBody: "Auto flows v2: SOP 化工作流与 Skills 设计(15 个分类工作流包 + 12 个技能,含步骤门禁与模板契约)、Codex 主题换肤(5 款原神角色主题 + midnight-pro)、Codex 桌面版(ChatGPT)检测与一键安装、四语言界面。Includes Windows, Linux, and macOS installers."
           releaseDraft: false
           prerelease: false

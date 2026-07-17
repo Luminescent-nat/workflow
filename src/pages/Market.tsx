@@ -18,6 +18,7 @@ import PageHeader from "@/components/PageHeader";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { ipc, type McpServer, type McpTarget } from "@/ipc";
+import { categoryLabel } from "@/roleCategories";
 import { useI18n } from "@/i18n";
 
 type Msg = { ok: boolean; text: string } | null;
@@ -61,7 +62,7 @@ function SkillsTab() {
   const skillName = (s: { id: string; name: string }) => local(`catalog.skill.${s.id}.name`, s.name);
   const skillDescription = (s: { id: string; description: string }) =>
     local(`catalog.skill.${s.id}.description`, s.description);
-  const categoryName = (category: string) => local(`catalog.skillCategory.${category}`, category);
+  const categoryName = (category: string) => categoryLabel(local, category);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["skills"], queryFn: ipc.listSkills });
   const [msg, setMsg] = useState<Msg>(null);

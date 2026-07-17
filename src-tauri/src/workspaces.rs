@@ -273,12 +273,21 @@ mod tests {
         // 3) 角色 agents 物化到各自目录,且不同
         assert!(a_home.join("agents").join("requirement-reviewer.md").exists());
         assert!(a_home.join("agents").join("architect.md").exists());
+        assert!(a_home.join("agents").join("frontend-dev.md").exists());
+        assert!(a_home.join("agents").join("backend-dev.md").exists());
+        assert!(a_home.join("agents").join("qa-regression.md").exists());
         assert!(b_home.join("agents").join("test-engineer.md").exists());
         assert!(!b_home.join("agents").join("architect.md").exists(), "B 不应有 A 的 agent");
+        assert!(!b_home.join("agents").join("qa-regression.md").exists(), "B 不应有 A 的 agent");
 
         // 4) 命令物化
         assert!(a_home.join("commands").join("kickoff.md").exists());
+        assert!(a_home.join("commands").join("handoff.md").exists());
+        assert!(a_home.join("commands").join("accept.md").exists());
+        assert!(b_home.join("commands").join("impact.md").exists());
+        assert!(b_home.join("commands").join("cases.md").exists());
         assert!(b_home.join("commands").join("regress.md").exists());
+        assert!(!b_home.join("commands").join("kickoff.md").exists(), "B 不应有 A 的命令");
 
         // 5) codex 隔离配置(ws_a 含 codex)
         let a_codex = codex_home(&ws_a);
