@@ -47,7 +47,7 @@ For source-based use, install the prerequisites above, install dependencies, and
 
 ## Codex Themes
 
-The Themes page applies visual skins to the Codex desktop application. It starts Codex with Chromium remote debugging enabled and injects the selected CSS at runtime; it does not alter the Codex installation directory.
+The Themes page applies visual skins to the Codex desktop application. If Chromium remote debugging is not already available, Codex restarts once to enable it. Later theme changes reuse the running session and apply live without restarting; Codex installation files are not modified.
 
 Before applying a theme, ensure the Codex desktop application is installed and Node.js is available on `PATH`. The first application creates a backup of `~/.codex/config.toml`. Restoring the default theme removes the injected styling, stops the theme helper, and restores that backup when present.
 

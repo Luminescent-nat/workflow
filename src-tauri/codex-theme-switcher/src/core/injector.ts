@@ -169,15 +169,17 @@ if (previous?.artUrl && previous.artUrl !== artUrl) {
 }
 
 const existingStyle = document.getElementById(STYLE_ID);
-if (existingStyle) existingStyle.textContent = CSS_TEXT;
-let jsCleanup = null;
+if (existingStyle && existingStyle.textContent !== CSS_TEXT) existingStyle.textContent = CSS_TEXT;
+let jsController = null;
 
 const ensure = () => {
   if (window.__CODEX_THEME_DISABLED__) return;
   const root = document.documentElement;
   if (!root) return;
-  root.classList.add(CLASS_NAME);
-  if (artUrl) root.style.setProperty("--theme-art", \`url("\${artUrl}")\`);
+  if (!root.classList.contains(CLASS_NAME)) root.classList.add(CLASS_NAME);
+  if (artUrl && root.style.getPropertyValue("--theme-art") !== \`url("\${artUrl}")\`) {
+    root.style.setProperty("--theme-art", \`url("\${artUrl}")\`);
+  }
 
   let style = document.getElementById(STYLE_ID);
   if (!style) {
@@ -185,29 +187,39 @@ const ensure = () => {
     style.id = STYLE_ID;
     (document.head || root).appendChild(style);
   }
-  style.textContent = CSS_TEXT;
+  if (!style.textContent) style.textContent = CSS_TEXT;
 
   // Run optional per-theme JS
   if (INJECT_JS_TEXT && !window[STATE_KEY]?.jsInitialized) {
     try {
       const fn = new Function("themeId", "artUrl", INJECT_JS_TEXT);
-      jsCleanup = fn(${JSON.stringify(theme.id)}, artUrl);
+      const controller = fn(${JSON.stringify(theme.id)}, artUrl);
+      jsController = typeof controller === "function" ? { cleanup: controller } : controller;
     } catch (e) {
       console.error("[codex-theme] inject js error:", e);
     }
     if (window[STATE_KEY]) {
-      window[STATE_KEY].jsCleanup = jsCleanup;
+      window[STATE_KEY].jsController = jsController;
+      window[STATE_KEY].jsCleanup = jsController?.cleanup;
       window[STATE_KEY].jsInitialized = true;
     }
   }
 
   const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
-  const home = document.querySelector('[role="main"]:has([data-testid="home-icon"])');
+  const homeIcon = document.querySelector('[data-testid="home-icon"]');
+  const home = homeIcon?.closest('[role="main"]') ?? null;
   for (const candidate of document.querySelectorAll('[role="main"].theme-home')) {
     if (candidate !== home) candidate.classList.remove("theme-home");
   }
+  for (const candidate of document.querySelectorAll('.theme-project-selector-shell')) {
+    candidate.classList.remove('theme-project-selector-shell');
+  }
   if (home) home.classList.add("theme-home");
+  const projectSelector = home?.querySelector('[class*="group/project-selector"]');
+  const projectSelectorShell = projectSelector?.closest('.horizontal-scroll-fade-mask')?.parentElement;
+  projectSelectorShell?.classList.add('theme-project-selector-shell');
   if (shellMain) shellMain.classList.toggle("theme-home-shell", Boolean(home));
+  jsController?.ensure?.();
 };
 
 const cleanup = () => {
@@ -216,27 +228,24 @@ const cleanup = () => {
   document.documentElement?.style.removeProperty("--theme-art");
   document.querySelectorAll(".theme-home").forEach((n) => n.classList.remove("theme-home"));
   document.querySelectorAll(".theme-home-shell").forEach((n) => n.classList.remove("theme-home-shell"));
+  document.querySelectorAll(".theme-project-selector-shell").forEach((n) => n.classList.remove("theme-project-selector-shell"));
   document.getElementById(STYLE_ID)?.remove();
   document.getElementById(CHROME_ID)?.remove();
   const state = window[STATE_KEY];
   state?.observer?.disconnect();
   if (state?.timer) clearInterval(state.timer);
-  if (state?.scheduler?.timeout) clearTimeout(state.scheduler.timeout);
   if (state?.artUrl) URL.revokeObjectURL(state.artUrl);
-  try { state?.jsCleanup?.(); } catch (e) {}
+  if (state?.jsController?.cleanup) {
+    state.jsController.cleanup();
+  } else {
+    try { state?.jsCleanup?.(); } catch (e) {}
+  }
   delete window[STATE_KEY];
   return true;
 };
 
-const scheduler = { timeout: null };
-const scheduleEnsure = () => {
-  if (scheduler.timeout) clearTimeout(scheduler.timeout);
-  scheduler.timeout = setTimeout(() => { scheduler.timeout = null; ensure(); }, 180);
-};
-const observer = new MutationObserver(scheduleEnsure);
-observer.observe(document.documentElement, { childList: true, subtree: true });
-const timer = setInterval(ensure, 5000);
-window[STATE_KEY] = { ensure, cleanup, observer, timer, scheduler, artUrl, jsCleanup, jsInitialized: false, version: "1.0.2" };
+const timer = setInterval(ensure, 2000);
+window[STATE_KEY] = { ensure, cleanup, timer, jsController, jsCleanup: null, jsInitialized: false, version: "1.0.2" };
 ensure();
 return { installed: true, version: "1.0.0", themeId: ${JSON.stringify(theme.id)} };
 })()`;

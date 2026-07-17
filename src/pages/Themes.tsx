@@ -93,7 +93,7 @@ export default function Themes() {
     setLoading(true);
     setMsg(null);
     try {
-      const output = await runCli(cliPath, ["apply", selected, "--restart-existing"]);
+      const output = await runCli(cliPath, ["apply", selected, "--restart-if-needed"]);
       const parsed = JSON.parse(output);
       setMsg({ ok: true, text: t("themes.applied", { name: themes.find((t) => t.id === selected)?.name ?? selected }) });
       console.log("[themes] apply result:", parsed);

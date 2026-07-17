@@ -22,31 +22,49 @@ return (() => {
     return chrome;
   };
 
+  let observedMain = null;
+  const resizeObserver = new ResizeObserver(() => positionChrome());
   const positionChrome = () => {
     if (window.__CODEX_THEME_ACTIVE_ID__ !== THEME_ID) {
+      resizeObserver.disconnect();
       document.getElementById(CHROME_ID)?.remove();
       return;
     }
     const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
-    const home = document.querySelector('[role="main"]:has([data-testid="home-icon"])');
+    const homeIcon = document.querySelector('[data-testid="home-icon"]');
+    const home = homeIcon?.closest('[role="main"]') ?? null;
     const chrome = ensureChrome();
+    if (observedMain !== shellMain) {
+      resizeObserver.disconnect();
+      if (shellMain) resizeObserver.observe(shellMain);
+      observedMain = shellMain;
+    }
     if (shellMain) {
       const box = shellMain.getBoundingClientRect();
-      chrome.style.left = `${Math.round(box.left)}px`;
-      chrome.style.top = `${Math.round(box.top)}px`;
-      chrome.style.width = `${Math.round(box.width)}px`;
-      chrome.style.height = `${Math.round(box.height)}px`;
+      const styles = {
+        left: `${Math.round(box.left)}px`,
+        top: `${Math.round(box.top)}px`,
+        width: `${Math.round(box.width)}px`,
+        height: `${Math.round(box.height)}px`,
+      };
+      for (const [property, value] of Object.entries(styles)) {
+        if (chrome.style[property] !== value) chrome.style[property] = value;
+      }
     }
-    chrome.classList.toggle("theme-home-shell", Boolean(home));
+    const homeShell = Boolean(home);
+    if (chrome.classList.contains("theme-home-shell") !== homeShell) {
+      chrome.classList.toggle("theme-home-shell", homeShell);
+    }
   };
 
   positionChrome();
   window.addEventListener("resize", positionChrome);
-  const observer = new MutationObserver(positionChrome);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  return () => {
-    observer.disconnect();
-    window.removeEventListener("resize", positionChrome);
-    document.getElementById(CHROME_ID)?.remove();
+  return {
+    ensure: positionChrome,
+    cleanup: () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", positionChrome);
+      document.getElementById(CHROME_ID)?.remove();
+    },
   };
 })();

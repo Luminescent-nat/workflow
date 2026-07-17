@@ -8,6 +8,7 @@ const execFileAsync = promisify(execFile);
 export interface LaunchOptions {
   port: number;
   restartExisting?: boolean;
+  restartIfNeeded?: boolean;
   profilePath?: string;
   timeoutMs?: number;
 }
@@ -84,7 +85,7 @@ async function killCodexProcesses(): Promise<void> {
 }
 
 export async function ensureCodexRunning(options: LaunchOptions): Promise<LaunchResult> {
-  const { port, restartExisting, profilePath, timeoutMs = 30000 } = options;
+  const { port, restartExisting, restartIfNeeded, profilePath, timeoutMs = 30000 } = options;
 
   let debugReady = await testDebugPort(port);
   let mainProcesses = await findRunningCodexProcesses();
@@ -95,9 +96,15 @@ export async function ensureCodexRunning(options: LaunchOptions): Promise<Launch
     mainProcesses = [];
   }
 
-  if (!debugReady && mainProcesses.length > 0 && !restartExisting) {
+  if (restartIfNeeded && !debugReady && mainProcesses.length > 0) {
+    await killCodexProcesses();
+    debugReady = false;
+    mainProcesses = [];
+  }
+
+  if (!debugReady && mainProcesses.length > 0 && !restartExisting && !restartIfNeeded) {
     throw new Error(
-      `Codex is already running without theme-switcher debugging on port ${port}. Close Codex or rerun with --restart-existing.`,
+      `Codex is already running without theme-switcher debugging on port ${port}. Close Codex or rerun with --restart-if-needed.`,
     );
   }
 

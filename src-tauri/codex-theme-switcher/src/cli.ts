@@ -27,6 +27,7 @@ function parseArgs(argv: string[]) {
     themeId: "",
     port: 9335,
     restartExisting: false,
+    restartIfNeeded: false,
     profilePath: "",
     screenshot: "",
     timeoutMs: 30000,
@@ -35,6 +36,7 @@ function parseArgs(argv: string[]) {
     const arg = argv[i];
     if (arg === "--port") args.port = Number(argv[++i]);
     else if (arg === "--restart-existing") args.restartExisting = true;
+    else if (arg === "--restart-if-needed") args.restartIfNeeded = true;
     else if (arg === "--profile") args.profilePath = argv[++i];
     else if (arg === "--screenshot") args.screenshot = argv[++i];
     else if (arg === "--timeout-ms") args.timeoutMs = Number(argv[++i]);
@@ -64,7 +66,7 @@ async function cmdList() {
   ));
 }
 
-async function cmdApply(themeId: string, port: number, restartExisting: boolean, profilePath: string, timeoutMs: number) {
+async function cmdApply(themeId: string, port: number, restartExisting: boolean, restartIfNeeded: boolean, profilePath: string, timeoutMs: number) {
   const theme = await loadTheme(themeId);
   if (theme.id === "default") {
     await cmdRemove(port, false);
@@ -78,7 +80,7 @@ async function cmdApply(themeId: string, port: number, restartExisting: boolean,
   await applyThemeConfig(theme);
 
   // Ensure Codex is running with debug port.
-  const launchResult = await ensureCodexRunning({ port, restartExisting, profilePath, timeoutMs });
+  const launchResult = await ensureCodexRunning({ port, restartExisting, restartIfNeeded, profilePath, timeoutMs });
   console.error(`[codex-theme] Codex ${launchResult.alreadyRunning ? "already running" : "started"} on port ${port}`);
 
   // Wait for target and inject.
@@ -236,9 +238,9 @@ async function cmdDaemon(themeId: string, port: number, timeoutMs: number) {
 
     let targets: Awaited<ReturnType<typeof waitForTargets>> = [];
     try {
-      targets = await waitForTargets(port, 2000);
+      targets = await waitForTargets(port, 1000);
     } catch {
-      await sleep(1000);
+      await sleep(1500);
       continue;
     }
 
@@ -268,7 +270,7 @@ async function cmdDaemon(themeId: string, port: number, timeoutMs: number) {
         console.error(`[codex-theme daemon] inject failed for ${target.id}: ${(error as Error).message}`);
       }
     }
-    await sleep(900);
+    await sleep(2000);
   }
 
   for (const session of sessions.values()) session.close();
@@ -283,7 +285,7 @@ async function main() {
         break;
       case "apply":
         if (!args.themeId) throw new Error("Usage: apply <themeId>");
-        await cmdApply(args.themeId, args.port, args.restartExisting, args.profilePath, args.timeoutMs);
+        await cmdApply(args.themeId, args.port, args.restartExisting, args.restartIfNeeded, args.profilePath, args.timeoutMs);
         break;
       case "remove":
         await cmdRemove(args.port, true);
@@ -302,7 +304,7 @@ async function main() {
       default:
         console.log(`Usage:
   codex-theme list
-  codex-theme apply <themeId> [--port 9335] [--restart-existing]
+  codex-theme apply <themeId> [--port 9335] [--restart-if-needed] [--restart-existing]
   codex-theme remove [--port 9335]
   codex-theme status
   codex-theme verify [--port 9335] [--screenshot <path>]

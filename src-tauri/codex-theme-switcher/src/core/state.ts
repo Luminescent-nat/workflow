@@ -11,6 +11,7 @@ const STATE_DIR = path.join(os.homedir(), "AppData", "Local", "CodexThemeSwitche
 const STATE_PATH = path.join(STATE_DIR, "state.json");
 const LOG_PATH = path.join(STATE_DIR, "injector.log");
 const ERROR_LOG_PATH = path.join(STATE_DIR, "injector-error.log");
+const ORPHAN_SCAN_MARKER = path.join(STATE_DIR, "orphan-scan-v1");
 
 export async function readState(): Promise<ThemeState | null> {
   try {
@@ -49,11 +50,17 @@ export async function stopDaemon(): Promise<void> {
 
 async function stopOrphanDaemons(): Promise<void> {
   if (process.platform !== "win32") return;
+  try {
+    await fs.access(ORPHAN_SCAN_MARKER);
+    return;
+  } catch {}
   const script = `$selfPid = ${process.pid}; Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.ProcessId -ne $selfPid -and $_.CommandLine -match 'cli\\.js"?\\s+daemon\\s+genshin-' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`;
   try {
     await execFileAsync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
       windowsHide: true,
     });
+    await fs.mkdir(STATE_DIR, { recursive: true });
+    await fs.writeFile(ORPHAN_SCAN_MARKER, "1", "utf8");
   } catch {}
 }
 

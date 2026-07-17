@@ -146,7 +146,7 @@ html.codex-theme-{{id}} main.main-surface > header.app-header-tint {
 #codex-theme-{{id}}-chrome.theme-home-shell .theme-signature { display: block; }
 
 .theme-sparkles { position: absolute; inset: 48px 0 0; opacity: .72; }
-.theme-sparkles i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: white; box-shadow: 0 0 10px 3px color-mix(in srgb, {{primary}} 66%, transparent); animation: theme-twinkle 2.4s ease-in-out infinite; }
+.theme-sparkles i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: white; box-shadow: 0 0 8px 2px color-mix(in srgb, {{primary}} 54%, transparent); animation: none; }
 .theme-sparkles i::before, .theme-sparkles i::after { content: ""; position: absolute; left: 2px; top: -6px; width: 1px; height: 17px; background: linear-gradient(transparent, rgba(255,255,255,.95), transparent); }
 .theme-sparkles i::after { transform: rotate(90deg); }
 .theme-sparkles i:nth-child(1) { left: 7%; top: 11%; animation-delay: 0s; }
@@ -416,7 +416,7 @@ html.codex-theme-{{id}} .composer-surface-chrome::before {
   box-shadow: 0 4px 12px color-mix(in srgb, {{primary}} 22%, transparent);
 }
 
-.theme-home div:has(> .horizontal-scroll-fade-mask [class*="group/project-selector"]) {
+.theme-home .theme-project-selector-shell {
   position: relative;
   padding-top: 28px !important;
   border: 1px solid color-mix(in srgb, {{primary}} 44%, transparent);
@@ -424,7 +424,7 @@ html.codex-theme-{{id}} .composer-surface-chrome::before {
   background: linear-gradient(180deg, color-mix(in srgb, {{surface}} 94%, white), color-mix(in srgb, {{light}} 88%, white)) !important;
 }
 
-.theme-home div:has(> .horizontal-scroll-fade-mask [class*="group/project-selector"])::before {
+.theme-home .theme-project-selector-shell::before {
   content: "{{emblem}}  选择项目";
   position: absolute;
   left: 13px;
@@ -511,32 +511,50 @@ JS_TEMPLATE = '''return (() => {
     return chrome;
   };
 
+  let observedMain = null;
+  const resizeObserver = new ResizeObserver(() => positionChrome());
   const positionChrome = () => {
     if (window.__CODEX_THEME_ACTIVE_ID__ !== THEME_ID) {
+      resizeObserver.disconnect();
       document.getElementById(CHROME_ID)?.remove();
       return;
     }
     const shellMain = document.querySelector("main.main-surface") || document.querySelector("main");
-    const home = document.querySelector('[role="main"]:has([data-testid="home-icon"])');
+    const homeIcon = document.querySelector('[data-testid="home-icon"]');
+    const home = homeIcon?.closest('[role="main"]') ?? null;
     const chrome = ensureChrome();
+    if (observedMain !== shellMain) {
+      resizeObserver.disconnect();
+      if (shellMain) resizeObserver.observe(shellMain);
+      observedMain = shellMain;
+    }
     if (shellMain) {
       const box = shellMain.getBoundingClientRect();
-      chrome.style.left = `${Math.round(box.left)}px`;
-      chrome.style.top = `${Math.round(box.top)}px`;
-      chrome.style.width = `${Math.round(box.width)}px`;
-      chrome.style.height = `${Math.round(box.height)}px`;
+      const styles = {
+        left: `${Math.round(box.left)}px`,
+        top: `${Math.round(box.top)}px`,
+        width: `${Math.round(box.width)}px`,
+        height: `${Math.round(box.height)}px`,
+      };
+      for (const [property, value] of Object.entries(styles)) {
+        if (chrome.style[property] !== value) chrome.style[property] = value;
+      }
     }
-    chrome.classList.toggle("theme-home-shell", Boolean(home));
+    const homeShell = Boolean(home);
+    if (chrome.classList.contains("theme-home-shell") !== homeShell) {
+      chrome.classList.toggle("theme-home-shell", homeShell);
+    }
   };
 
   positionChrome();
   window.addEventListener("resize", positionChrome);
-  const observer = new MutationObserver(positionChrome);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  return () => {
-    observer.disconnect();
-    window.removeEventListener("resize", positionChrome);
-    document.getElementById(CHROME_ID)?.remove();
+  return {
+    ensure: positionChrome,
+    cleanup: () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", positionChrome);
+      document.getElementById(CHROME_ID)?.remove();
+    },
   };
 })();
 '''
