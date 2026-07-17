@@ -1,7 +1,7 @@
 {
   "name": "auto-flows",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "build:themes": "node src-tauri/codex-theme-switcher/node_modules/typescript/bin/tsc -p src-tauri/codex-theme-switcher/tsconfig.json",
-    "postinstall": "node -e \"require('node:child_process').execFileSync(process.execPath, [process.env.npm_execpath, '--prefix', 'src-tauri/codex-theme-switcher', 'install'], { stdio: 'inherit' })\""
+    "postinstall": "node scripts/install-themes.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.1",
